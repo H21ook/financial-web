@@ -11,7 +11,7 @@ export async function setTokens(access: string) {
         secure: true,
         path: "/",
         // maxAge: 60 * 15, // 15 min
-        maxAge: 60 * 5, // 1 min
+        maxAge: 60 * 60, // 1 min
     });
 }
 

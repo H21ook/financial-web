@@ -3,6 +3,7 @@ import { CustomResponse } from "@/types";
 export interface CoreFetcherOptions {
   token?: string;
   customHeaders?: Record<string, string>;
+  baseUrl?: string;
 }
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -14,11 +15,10 @@ export async function coreFetcher<T, TBody = undefined>(
   options: CoreFetcherOptions = {}
 ): Promise<CustomResponse<T>> {
   try {
-    const { token, customHeaders } = options;
+    const { token, customHeaders, baseUrl } = options;
+    const base = baseUrl || process.env.NEXT_PUBLIC_BASE_URL;
 
-    const url = new URL(endpoint, process.env.NEXT_PUBLIC_BASE_URL);
-
-    console.log("url ", url)
+    const url = new URL(endpoint, base);
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",

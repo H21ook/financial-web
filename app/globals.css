@@ -123,4 +123,16 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  .ag-center-header .ag-header-cell-label {
+    justify-content: center !important;
+  }
+
+  .ag-center-header .ag-header-cell-comp-wrapper {
+    justify-content: center !important;
+  }
+
+  .ag-center-cell {
+    @apply flex items-center justify-center text-center;
+  }
 }

@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/sidebar"
 import AppSideBar from '@/components/custom/app-sidebar'
 import { Separator } from "@/components/ui/separator"
+import { ThemeToggleButton } from '@/components/custom/shared/theme-toggle-button'
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
 
@@ -20,6 +21,8 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
                             orientation="vertical"
                             className="mr-2"
                         />
+
+                        <ThemeToggleButton />
                     </div>
                 </header>
                 <div className="flex flex-col gap-4 p-4">
