@@ -25,12 +25,7 @@ export async function GET(request: Request) {
     })
 
     if (resSystem.isOk && resSystem.data.exists) {
-        return NextResponse.json({
-            exists: true,
-            customerData: resSystem.data.customerData,
-            isActive: resSystem.data.isActive,
-            customerOid: resSystem.data.customerOid
-        });
+        return NextResponse.json(resSystem.data);
     }
 
     const resEbarimt = await serverFetcher.get<{
