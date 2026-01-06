@@ -44,21 +44,21 @@ const data = {
     ],
     navMain: [
         {
-            title: "Playground",
+            title: "Жагсаалт",
             url: "#",
             icon: SquareTerminal,
             isActive: true,
             items: [
                 {
-                    title: "History",
-                    url: "#",
+                    title: "Харилцагч",
+                    url: "/dashboard/customers",
                 },
                 {
-                    title: "Starred",
-                    url: "#",
+                    title: "Апп хэрэглэгч",
+                    url: "/dashboard/app-users",
                 },
                 {
-                    title: "Settings",
+                    title: "Цалин",
                     url: "#",
                 },
             ],

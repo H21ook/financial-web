@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { clientFetcher } from '@/lib/fetcher/clientFetcher';
 import { Customer } from '@/types/customer';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
 export default function CustomersPage() {
     const gridRef = useRef<AgGridReact>(null);
@@ -19,6 +20,7 @@ export default function CustomersPage() {
     const [stats, setStats] = useState({ total: 0, totalAmount: 0 });
     const [dateRange, setDateRange] = useState('all');
     const [status, setStatus] = useState('all');
+    const router = useRouter();
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -156,79 +158,39 @@ export default function CustomersPage() {
     return (
         <div>
             <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-end mb-8">
+                <div className="flex justify-between items-center mb-4">
                     <div>
                         <h1 className="text-2xl font-bold mb-1">Харилцагчдын жагсаалт</h1>
-                        {/* <p className="text-sm text-gray-500 font-medium">
-                            Total transactions: {stats.total}
-                        </p> */}
+                        <p className="text-sm text-gray-500 font-medium">
+                            Таны харилцагчдын жагсаалт
+                        </p>
                     </div>
-                    <div className="flex gap-3">
-                        <Button
+                    <div className="flex gap-3 items-center">
+                        {/* <Button
                             onClick={onExportClick}
                         >
                             Excel download
+                        </Button> */}
+                        <Button
+                            onClick={() => router.push("/dashboard/customers/new")}
+                        >
+                            Харилцагч нэмэх
                         </Button>
                     </div>
                 </div>
 
-                {/* <div className="bg-white p-2 rounded-lg shadow-xs border border-gray-200 flex items-center gap-6 mb-6">
-                    <div className="flex-1 flex gap-4 p-2">
-                        <div className="flex flex-col gap-1.5 flex-1">
-                            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">
-                                Type
-                            </label>
-                            <select
-                                value={category}
-                                onChange={(e) => setCategory(e.target.value)}
-                                className="w-full bg-transparent text-sm font-semibold focus:outline-none cursor-pointer"
-                            >
-                                <option value="all">All</option>
-                                {CATEGORIES.map((item: string) => (
-                                    <option key={item} value={item}>
-                                        {item}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="w-[1px] h-10 bg-gray-200 self-center"></div>
-                        <div className="flex flex-col gap-1.5 flex-1">
-                            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">
-                                Date
-                            </label>
-                            <select
-                                className="w-full bg-transparent text-sm font-semibold focus:outline-none cursor-pointer"
-                                onChange={(e) => setDateRange(e.target.value)}
-                            >
-                                <option value="all">All</option>
-                                <option value="lastWeek">Сүүлийн 7 хоног</option>
-                                <option value="lastMonth">Сүүлийн сар</option>
-                            </select>
-                        </div>
-                        <div className="w-[1px] h-10 bg-gray-200 self-center"></div>
-                        <div className="flex flex-col gap-1.5 flex-1">
-                            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">
-                                Status
-                            </label>
-                            <select
-                                className="w-full bg-transparent text-sm font-semibold focus:outline-none cursor-pointer"
-                                onChange={(e) => setStatus(e.target.value)}
-                            >
-                                <option value="all">All</option>
-                                {STATUSES.map((item: string) => (
-                                    <option key={item} value={item}>
-                                        {item}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                </div> */}
 
                 <div className="bg-transparent overflow-hidden h-[612px]">
                     <DataTable
                         ref={gridRef}
                         rowData={rowData}
+                        // toolbar={<div>
+                        //     <Button
+                        //         onClick={() => router.push("/dashboard/customers/new")}
+                        //     >
+                        //         Нэмэх
+                        //     </Button>
+                        // </div>}
                         columnDefs={columnDefs}
                         loading={loading}
                         pagination={false}

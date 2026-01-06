@@ -81,6 +81,7 @@ interface Props {
     loading?: boolean;
     pagination?: boolean;
     onFilteredDataChange?: (data: any[]) => void;
+    toolbar?: React.ReactNode;
 }
 
 const syncColumnsFromGrid = (
@@ -100,7 +101,7 @@ const syncColumnsFromGrid = (
 };
 
 const DataTable = forwardRef<AgGridReact, Props>(
-    ({ rowData, columnDefs, pinnedBottomRowData, loading, pagination }, ref) => {
+    ({ rowData, columnDefs, pinnedBottomRowData, toolbar, pagination }, ref) => {
         const [columns, setColumns] = useState(columnDefs);
 
         const onColumnChanged = (params: ColumnMovedEvent | ColumnVisibleEvent | ColumnPinnedEvent) => {
@@ -111,6 +112,7 @@ const DataTable = forwardRef<AgGridReact, Props>(
         return (
             <div className="h-full flex flex-col gap-4">
                 <TableToolbar
+                    toolbar={toolbar}
                     columns={columns}
                     onToggleColumn={(field) => {
                         setColumns((prev) =>
@@ -170,23 +172,25 @@ export default DataTable;
 interface TableToolbarProps {
     columns: ColDef[];
     onToggleColumn: (field: string) => void;
+    toolbar?: React.ReactNode;
 }
 
 export const TableToolbar = ({
+    toolbar,
     columns,
     onToggleColumn,
 }: TableToolbarProps) => {
     return (
-        <div className="flex justify-between items-center pt-2">
-            <h2 className="text-lg font-semibold">Харилцагчдын жагсаалт</h2>
+        <div className="flex justify-between items-center gap-6 pt-2">
+            <InputGroup className='h-8 max-w-xs'>
+                <InputGroupInput placeholder="Хайх..." />
+                <InputGroupAddon>
+                    <Search />
+                </InputGroupAddon>
+            </InputGroup>
 
             <div className="flex items-center gap-2">
-                <InputGroup className='h-8'>
-                    <InputGroupInput placeholder="Хайх..." />
-                    <InputGroupAddon>
-                        <Search />
-                    </InputGroupAddon>
-                </InputGroup>
+                {toolbar}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm">
@@ -215,6 +219,7 @@ export const TableToolbar = ({
                             })}
                     </DropdownMenuContent>
                 </DropdownMenu>
+
             </div>
         </div>
     );
