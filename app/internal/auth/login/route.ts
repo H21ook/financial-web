@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
   const resData = await res.json();
   const { token, data: userData } = resData;
-  await setTokens(token);
+  await setTokens(token, userData);
 
   return NextResponse.json({ userData, token });
 }

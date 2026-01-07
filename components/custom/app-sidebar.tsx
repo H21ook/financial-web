@@ -8,140 +8,104 @@ import {
     SidebarHeader,
 } from "@/components/ui/sidebar"
 import {
-    AudioWaveform,
-    BookOpen,
-    Bot,
-    Command,
-    GalleryVerticalEnd,
-    Settings2,
-    SquareTerminal,
+    Calculator,
+    TableProperties,
 } from "lucide-react"
 import { NavMain } from './nav-main';
 import { NavUser } from './nav-user';
+import Logo from './logo';
 
-const data = {
-    user: {
-        name: "shadcn",
-        email: "m@example.com",
-        avatar: "/avatars/shadcn.jpg",
+const MENU_DATA = [
+    {
+        title: "Жагсаалт",
+        url: "#",
+        icon: TableProperties,
+        isActive: true,
+        items: [
+            {
+                title: "Харилцагч",
+                url: "/dashboard/customers",
+            },
+            {
+                title: "Апп хэрэглэгч",
+                url: "/dashboard/app-users",
+            },
+            {
+                title: "Цалин",
+                url: "#",
+            },
+        ],
     },
-    teams: [
-        {
-            name: "Acme Inc",
-            logo: GalleryVerticalEnd,
-            plan: "Enterprise",
-        },
-        {
-            name: "Acme Corp.",
-            logo: AudioWaveform,
-            plan: "Startup",
-        },
-        {
-            name: "Evil Corp.",
-            logo: Command,
-            plan: "Free",
-        },
-    ],
-    navMain: [
-        {
-            title: "Жагсаалт",
-            url: "#",
-            icon: SquareTerminal,
-            isActive: true,
-            items: [
-                {
-                    title: "Харилцагч",
-                    url: "/dashboard/customers",
-                },
-                {
-                    title: "Апп хэрэглэгч",
-                    url: "/dashboard/app-users",
-                },
-                {
-                    title: "Цалин",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Models",
-            url: "#",
-            icon: Bot,
-            items: [
-                {
-                    title: "Genesis",
-                    url: "#",
-                },
-                {
-                    title: "Explorer",
-                    url: "#",
-                },
-                {
-                    title: "Quantum",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Documentation",
-            url: "#",
-            icon: BookOpen,
-            items: [
-                {
-                    title: "Introduction",
-                    url: "#",
-                },
-                {
-                    title: "Get Started",
-                    url: "#",
-                },
-                {
-                    title: "Tutorials",
-                    url: "#",
-                },
-                {
-                    title: "Changelog",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Settings",
-            url: "#",
-            icon: Settings2,
-            items: [
-                {
-                    title: "General",
-                    url: "#",
-                },
-                {
-                    title: "Team",
-                    url: "#",
-                },
-                {
-                    title: "Billing",
-                    url: "#",
-                },
-                {
-                    title: "Limits",
-                    url: "#",
-                },
-            ],
-        },
-    ]
-}
+    // {
+    //     title: "Models",
+    //     url: "#",
+    //     icon: Bot,
+    //     items: [
+    //         {
+    //             title: "Genesis",
+    //             url: "#",
+    //         },
+    //         {
+    //             title: "Explorer",
+    //             url: "#",
+    //         },
+    //         {
+    //             title: "Quantum",
+    //             url: "#",
+    //         },
+    //     ],
+    // },
+    // {
+    //     title: "Documentation",
+    //     url: "#",
+    //     icon: BookOpen,
+    //     items: [
+    //         {
+    //             title: "Introduction",
+    //             url: "#",
+    //         },
+    //         {
+    //             title: "Get Started",
+    //             url: "#",
+    //         },
+    //         {
+    //             title: "Tutorials",
+    //             url: "#",
+    //         },
+    //         {
+    //             title: "Changelog",
+    //             url: "#",
+    //         },
+    //     ],
+    // },
+    {
+        title: "Санхүү тайлан",
+        url: "#",
+        icon: Calculator,
+        items: [
+            {
+                title: "Эхний үлдэгдэл",
+                url: "#",
+            },
+            {
+                title: "Ерөнхий журам",
+                url: "#",
+            }
+        ],
+    },
+];
 
 const AppSideBar = ({ ...props }: React.ComponentProps<typeof Sidebar>) => {
     return (
         <Sidebar collapsible="offExamples" {...props}>
             <SidebarHeader>
-                {/* <TeamSwitcher teams={data.teams} /> */}
+                <Logo />
             </SidebarHeader>
             <SidebarContent>
-                <NavMain items={data.navMain} />
+                <NavMain items={MENU_DATA} />
             </SidebarContent>
             <SidebarFooter>
-                <NavUser user={data.user} />
+                <NavUser />
             </SidebarFooter>
         </Sidebar>
     )

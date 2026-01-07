@@ -19,3 +19,26 @@ export interface LoginResponse {
         role: Roles;
     };
 }
+
+export interface User {
+    Oid: string;
+    UserName: string;
+    PasswordHash: string;
+    Firstname: string;
+    LastName: string;
+    phone: string;
+    Email: string;
+    IsActive: boolean;
+    CreatedDate: string; // ISO datetime
+    AccountantOid: string;
+    RoleName: "accountant" | string;
+    PicUrl: string | null;
+    Introduction: boolean;
+    Description: string | null;
+    Bank: string | null;
+    BankAccountnum: string | null;
+    BankAccountName: string | null;
+    IntroductionIsAcitive: boolean;
+    accountantName: string;
+    deviceId: string;
+}

@@ -8,6 +8,16 @@ export function proxy(req: NextRequest) {
 
     const isAuthPages = pathname.startsWith("/auth")
     const isProtectedPages = pathname.startsWith("/dashboard")
+    const isInternalApi = pathname.startsWith("/internal") && !pathname.startsWith("/internal/auth")
+
+    if (!token && isInternalApi) {
+        const res = NextResponse.json(
+            { error: "UNAUTHORIZED" },
+            { status: 401 }
+        )
+        res.cookies.delete(ACCESS_TOKEN_KEY)
+        return res
+    }
 
     if (!token && isProtectedPages) {
         const loginUrl = new URL("/auth/login", req.url);

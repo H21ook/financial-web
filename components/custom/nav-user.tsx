@@ -1,12 +1,12 @@
 "use client"
 
 import {
-    BadgeCheck,
-    Bell,
     ChevronsUpDown,
-    CreditCard,
     LogOut,
-    Sparkles,
+    // BadgeCheck,
+    // Bell,
+    // CreditCard,
+    // Sparkles,
 } from "lucide-react"
 
 import {
@@ -17,11 +17,11 @@ import {
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
+    // DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import {
     SidebarMenu,
@@ -29,17 +29,15 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar"
+import { useAuth } from "../auth-provider"
+import { formatName } from "@/lib/utils"
+import { User } from "@/types/auth.types"
 
-export function NavUser({
-    user,
-}: {
-    user: {
-        name: string
-        email: string
-        avatar: string
-    }
-}) {
+export function NavUser() {
     const { isMobile } = useSidebar()
+    const { user, logout } = useAuth()
+
+    if (!user) return null
 
     return (
         <SidebarMenu>
@@ -50,14 +48,7 @@ export function NavUser({
                             size="lg"
                             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                         >
-                            <Avatar className="h-8 w-8 rounded-lg">
-                                <AvatarImage src={user.avatar} alt={user.name} />
-                                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-                            </Avatar>
-                            <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate font-medium">{user.name}</span>
-                                <span className="truncate text-xs">{user.email}</span>
-                            </div>
+                            <UserItem user={user} />
                             <ChevronsUpDown className="ml-auto size-4" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
@@ -69,18 +60,11 @@ export function NavUser({
                     >
                         <DropdownMenuLabel className="p-0 font-normal">
                             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                                <Avatar className="h-8 w-8 rounded-lg">
-                                    <AvatarImage src={user.avatar} alt={user.name} />
-                                    <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-                                </Avatar>
-                                <div className="grid flex-1 text-left text-sm leading-tight">
-                                    <span className="truncate font-medium">{user.name}</span>
-                                    <span className="truncate text-xs">{user.email}</span>
-                                </div>
+                                <UserItem user={user} />
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
+                        {/* <DropdownMenuGroup>
                             <DropdownMenuItem>
                                 <Sparkles />
                                 Upgrade to Pro
@@ -101,8 +85,8 @@ export function NavUser({
                                 Notifications
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>
+                        <DropdownMenuSeparator /> */}
+                        <DropdownMenuItem onClick={logout}>
                             <LogOut />
                             Log out
                         </DropdownMenuItem>
@@ -111,4 +95,21 @@ export function NavUser({
             </SidebarMenuItem>
         </SidebarMenu>
     )
+}
+
+const UserItem = ({ user }: { user: User }) => {
+
+    const name = formatName(user)
+    const nameChar = user.Firstname?.substring(0, 2)
+
+    return <>
+        <Avatar className="h-8 w-8 rounded-lg">
+            <AvatarImage src={user.PicUrl || ""} alt={name} />
+            <AvatarFallback className="rounded-lg uppercase">{nameChar}</AvatarFallback>
+        </Avatar>
+        <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-medium">{name}</span>
+            <span className="truncate text-xs uppercase">{user.UserName}</span>
+        </div>
+    </>
 }

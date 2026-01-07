@@ -1,3 +1,4 @@
+import { User } from "@/types/auth.types";
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -8,6 +9,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export const formatName = (user: User | null): string => {
+  let formatedName = "";
+  if (user?.LastName && user.LastName?.length > 0) {
+    formatedName = user.LastName[0].toUpperCase()
+  }
+  if (user?.Firstname) {
+    formatedName = `${formatedName}.${user.LastName}`.toUpperCase();
+    return formatedName;
+  }
+
+  return user?.UserName || ""
+}
 
 export const checkCitizenRegisterFormat = (regno: string) => {
   if (!regno) {

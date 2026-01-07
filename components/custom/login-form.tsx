@@ -25,11 +25,10 @@ import {
 } from "@/components/ui/select";
 import { useForm, Controller } from "react-hook-form";
 import { useState } from "react";
-import { clientFetcher } from "@/lib/fetcher/clientFetcher";
-import { LoginFormValues, LoginResponse, Roles } from "@/types/auth.types";
+import { LoginFormValues, Roles } from "@/types/auth.types";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "../ui/input-group";
 import { Eye, EyeOff } from "lucide-react";
-import { generateDeviceFingerprint } from "@/lib/device-fingerprint";
+import { useAuth } from "../auth-provider";
 
 const roleOptions: { value: Roles; label: string }[] = [
     { value: Roles.ACCOUNTANT, label: "Нягтлан бодогч" },
@@ -41,10 +40,13 @@ const roleOptions: { value: Roles; label: string }[] = [
 
 export function LoginForm({
     className,
+    redirectTo,
     ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { redirectTo?: string }) {
     const [showPassword, setShowPassword] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const { login } = useAuth();
+
     const {
         control,
         register,
@@ -60,20 +62,18 @@ export function LoginForm({
 
     const onSubmit = async (data: LoginFormValues) => {
         try {
-            console.log("LOGIN DATA:", data);
             setErrorMessage(null);
-            const fingerprint = generateDeviceFingerprint();
-            const response = await clientFetcher.post<LoginResponse, LoginFormValues>("/internal/auth/login", data, undefined, {
-                customHeaders: {
-                    "x-device-id": fingerprint || "",
-                }
-            });
+            const response = await login(data);
             if (!response.isOk) {
                 setErrorMessage(response?.error || "Нэвтрэх нэр эсвэл нууц үг буруу байна.");
                 return;
             }
 
-            window.location.href = "/dashboard";
+            if (redirectTo) {
+                window.location.href = redirectTo;
+            } else {
+                window.location.href = "/dashboard";
+            }
         } catch (error) {
             console.error("Login failed", error)
             setErrorMessage("Нэвтрэх үйлдэл амжилтгүй боллоо.");
