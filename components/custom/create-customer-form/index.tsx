@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Loader2, Check } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,11 +18,20 @@ import { Customer, Taxpayer } from "@/types/customer"
 import { checkCitizenRegisterFormat, checkOrganizationRegisterFormat, citizenRegex, organizationRegex } from "@/lib/utils"
 import DatePicker from "@/components/ui/date-picker"
 import { BusinessClass, Region, SubRegion } from "@/types/reference"
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form"
+import { createCustomer } from "@/lib/actions/customer-actions"
 
 const customerSchema = z.object({
     CustomerID: z.string()
         .min(7, "Доод тал нь 7 тэмдэгт байх ёстой")
-        .regex(organizationRegex, "Зөвхөн тоо оруулна уу."),
+        .regex(organizationRegex, "Регистрийн дугаарын формат буруу байна."),
     CustomerName: z.string().min(1, "Байгууллагын нэр шаардлагатай"),
     ShortName: z.string().optional(),
     TinCode: z.string().min(1, "Байгууллагын ТИН дугаар шаардлагатай"),
@@ -35,9 +44,9 @@ const customerSchema = z.object({
     DigitalSignaturePassword: z.string().optional(),
     DigitalCertFilePath: z.string().optional(),
     EBarimtRegistered: z.string().optional(),
-    TaxLoginOid: z.string().min(1, "Татварын нэвтрэх эрх шаардлагатай"),
+    TaxLoginOid: z.string().optional(),
     InsuranceLoginId: z.string().optional(),
-    BusinessClassOid: z.string().optional(),
+    BusinessClassOid: z.string().min(1, "Бизнес ангилал сонгоно уу."),
     RegionId: z.string().min(1, "Аймаг/Хот сонгоно уу"),
     RegionSubId: z.string().optional(),
     // Director: z.string().min(1, "Захирлын РД оруулна уу."),
@@ -75,7 +84,6 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
     const [isOrgLoading, setIsOrgLoading] = useState(false)
     const [isDirectorLoading, setIsDirectorLoading] = useState(false)
     const [orgDataFetchedRegNo, setOrgDataFetchedRegNo] = useState('')
-    const [directorDataFetched, setDirectorDataFetched] = useState(false)
     const [subRegions, setSubRegions] = useState<SubRegion[]>([])
     const [showNewRoleDialog, setShowNewRoleDialog] = useState(false)
     const [taxRoles, setTaxRoles] = useState(mockTaxRoles)
@@ -111,70 +119,85 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
             IsCityPayer: false,
             Active: true,
             UserName: "",
-            ContractPeriodType: "",
-        },
+            ContractPeriodType: contractPeriodTypes[0].value,
+        }
     })
 
-    const fetchOrgData = async () => {
+    const clearOrgFilledData = () => {
         setOrgDataFetchedRegNo('')
+        form.setValue("CustomerName", "", { shouldValidate: false, shouldDirty: false, shouldTouch: false });
+        form.setValue("TinCode", "", { shouldValidate: false, shouldDirty: false, shouldTouch: false });
+        form.setValue("UserName", "", { shouldValidate: false, shouldDirty: false, shouldTouch: false });
+        form.setValue("IsVatPayer", false, { shouldValidate: false, shouldDirty: false, shouldTouch: false });
+        form.setValue("IsCityPayer", false, { shouldValidate: false, shouldDirty: false, shouldTouch: false });
+
+        form.clearErrors(["CustomerName", "TinCode", "UserName"]);
+    };
+
+    const fetchOrgData = async (regNo: string) => {
         const isValid = await form.trigger("CustomerID");
-        if (!isValid) {
-            return
-        }
-        const rd = form.getValues("CustomerID")?.trim();
+        if (!isValid) return;
+
+        const rd = regNo?.trim();
 
         if (!checkOrganizationRegisterFormat(rd)) {
-            toast.error("Байгууллагын регистр буруу байна.")
-            return
+            toast.error("Байгууллагын регистр буруу байна.");
+            return;
         }
+
+        // Өмнөх татсан датаг цэвэрлэх
+        clearOrgFilledData();
 
         try {
-            setIsOrgLoading(true)
-            const response = await clientFetcher.get<{
-                tin: string,
-                exists: false,
-                data: Taxpayer
-            } | {
-                exists: true,
-                isActive: boolean,
-                customerData: Customer,
-                customerOid: string
-            }>(`/internal/v1/check-organization-by-regno?regno=${rd}`)
-            if (!response.isOk) {
-                toast.error(response.error)
-                return
-            }
-            const data = response.data
-            const { exists } = data;
+            setIsOrgLoading(true);
 
-            let tinCode = '', name = '', vatPayer = false, cityPayer = false
-            if (exists) {
-                // Өөр хэрэглэгч дээр бүртгэлтэй бол яах бол?
+            const response = await clientFetcher.get<
+                | { tin: string; exists: false; data: Taxpayer }
+                | { exists: true; isActive: boolean; customerData: Customer; customerOid: string }
+            >(`/internal/v1/check-organization-by-regno?regno=${encodeURIComponent(rd)}`);
+
+            if (!response.isOk) {
+                toast.error(response.error);
+                return;
+            }
+
+            const data = response.data;
+
+            if (data.exists) {
                 form.setError("CustomerID", { type: "manual", message: "Энэ регистрийн дугаар бүртгэлтэй байна." });
                 return;
-            } else {
-                tinCode = data.tin
-                name = data.data.name
-                vatPayer = data.data.vatPayer
-                cityPayer = data.data.cityPayer
             }
-            form.setValue("CustomerName", name)
-            form.setValue("TinCode", tinCode)
-            form.setValue("UserName", name)
-            form.setValue("IsVatPayer", vatPayer)
-            form.setValue("IsCityPayer", cityPayer)
 
-            setOrgDataFetchedRegNo(rd)
-            toast.success("Байгууллагын мэдээлэл амжилттай татагдлаа.")
+            const tinCode = data.tin ?? "";
+            const name = data.data?.name ?? "";
+            const vatPayer = !!data.data?.vatPayer;
+            const cityPayer = !!data.data?.cityPayer;
+
+            form.setValue("CustomerName", name, { shouldValidate: false });
+            form.setValue("TinCode", tinCode.toString(), { shouldValidate: false });
+            form.setValue("UserName", name, { shouldValidate: false });
+            form.setValue("IsVatPayer", vatPayer, { shouldValidate: false });
+            form.setValue("IsCityPayer", cityPayer, { shouldValidate: false });
+
+            form.clearErrors(["CustomerName", "TinCode", "UserName"]);
+
+            setOrgDataFetchedRegNo(rd);
+            toast.success("Байгууллагын мэдээлэл амжилттай татагдлаа.");
         } catch {
-            toast.error("Байгууллагын мэдээлэл татахад алдаа гарлаа.")
+            toast.error("Байгууллагын мэдээлэл татахад алдаа гарлаа.");
         } finally {
-            setIsOrgLoading(false)
+            setIsOrgLoading(false);
         }
-    }
+    };
 
-    const fetchDirectorData = async () => {
-        const rd = form.getValues("DirectorRegister")
+    const fetchDirectorData = async (regNo: string) => {
+        const isValid = await form.trigger("DirectorRegister");
+        if (!isValid) return;
+
+        form.setValue("DrFirstname", "", { shouldValidate: false, shouldDirty: false, shouldTouch: false });
+        form.setValue("DrLastname", "", { shouldValidate: false, shouldDirty: false, shouldTouch: false });
+
+        const rd = regNo?.trim()
         if (!checkCitizenRegisterFormat(rd)) {
             toast.error("Регистрийн дугаарын формат буруу байна.")
             return
@@ -208,17 +231,18 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
             // end neg logic bainadaa
         }
 
-        form.setValue("DrLastname", firstname)
-        form.setValue("DrFirstname", lastname)
+        form.setValue("DrFirstname", firstname, { shouldValidate: false });
+        form.setValue("DrLastname", lastname, { shouldValidate: false });
+
+        form.clearErrors(["DrFirstname", "DrLastname"])
         setIsDirectorLoading(false)
 
         // !!! регистрээр мэдээлэл татчихаад дарааа нь регистр 
-        // өөрчлөөд татат дарахгүй байж байгаад submit хийвэл 
+        // өөрчлөөд татах дарахгүй байж байгаад submit хийвэл 
         // регистр буруу илгээгдэхээр байгааг засах
     }
 
     const handleChangeRegion = async (value: string) => {
-        form.setValue("RegionId", value)
         form.setValue("RegionSubId", "")
         setSubRegions(allSubRegions.filter(item => item.RegionId === value))
     }
@@ -235,24 +259,45 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
 
     const onSubmit = async (data: CustomerFormData) => {
         setIsSubmitting(true)
-        await new Promise((resolve) => setTimeout(resolve, 1500))
+        try {
 
-        // Generate a mock ID for the new organization
-        const newOrgId = Math.random().toString(36).substr(2, 9)
+            const fd = new FormData()
 
-        toast.success("Байгууллага амжилттай үүслээ")
+            Object.entries(data).forEach(([key, value]) => {
+                if (value === undefined || value === null) return
 
-        // Redirect to organization detail page
-        router.push(`/clients/${newOrgId}`)
+                if (typeof value === "boolean") {
+                    fd.append(key, value ? "true" : "false")
+                } else {
+                    fd.append(key, String(value))
+                }
+            })
+
+            const response = await createCustomer(fd)
+
+            if (!response.isOk) {
+                toast.error(response.error)
+                setIsSubmitting(false)
+                return
+            }
+
+            toast.success("Байгууллага амжилттай үүслээ")
+            router.push("/dashboard/customers")
+        } catch (error) {
+            console.error("Error submitting form:", error)
+            toast.error("Байгууллага үүсгэх үед хатуулахгүй")
+            setIsSubmitting(false)
+        }
     }
 
     return (
         <>
-            {/* Content */}
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-                <div className="space-y-8">
-                    {/* Tax Access Right Section */}
-                    <div className="space-y-4 grid md:grid-cols-3">
+            <Form {...form}>
+                {/* Content */}
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <div className="space-y-8">
+                        {/* Tax Access Right Section */}
+                        {/* <div className="space-y-4 grid md:grid-cols-3">
                         <div className="space-y-2">
                             <Label htmlFor="taxAccessRight">
                                 Татварын нэвтрэх эрх <span className="text-destructive">*</span>
@@ -285,41 +330,54 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
                             )}
                             <p className="text-sm text-muted-foreground">Жагсаалтад байхгүй бол шинээр үүсгэж болно</p>
                         </div>
-                    </div>
+                    </div> */}
 
-                    {/* Organization Section */}
-                    <div className="space-y-4">
-                        <h3 className="font-medium flex items-center gap-2">
-                            Байгууллагын мэдээлэл
-                        </h3>
+                        {/* Organization Section */}
+                        <div className="space-y-4">
+                            <h3 className="font-medium flex items-center gap-2">
+                                Байгууллагын мэдээлэл
+                            </h3>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="CustomerID">
-                                Байгууллагын РД <span className="text-destructive">*</span>
-                            </Label>
-                            <div className="grid md:grid-cols-3 gap-4">
-                                <Input id="CustomerID" {...form.register("CustomerID")} placeholder="1234567" />
-                                <div className="flex items-center">
-                                    <Button type="button"
-                                        onClick={fetchOrgData}
-                                        disabled={isOrgLoading || (orgDataFetchedRegNo !== "" && orgDataFetchedRegNo === form.watch("CustomerID"))}
-                                        className="bg-green-600 hover:bg-green-700">
-                                        {isOrgLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                                        Мэдээлэл татах
-                                    </Button>
-                                </div>
-                            </div>
-                            {form.formState.errors.CustomerID && (
-                                <p className="text-sm text-destructive">{form.formState.errors.CustomerID.message}</p>
-                            )}
-                            {/* <p className="text-sm text-muted-foreground">Төрийн бүртгэлээс автоматаар татагдана</p> */}
+                            <FormField
+                                control={form.control}
+                                name="CustomerID"
+                                render={({ field, fieldState: { error } }) => (
+                                    <FormItem className="gap-2 items-start">
+                                        <FormLabel className="text-sm leading-none">Байгууллагын РД <span className="text-destructive">*</span></FormLabel>
+                                        <FormControl>
+                                            <div className="flex gap-2">
+                                                <Input id="CustomerID" {...field} placeholder="1234567" aria-invalid={!!error} />
+                                                <div className="flex items-center">
+                                                    <Button
+                                                        type="button"
+                                                        onClick={() => fetchOrgData(field.value)}
+                                                        disabled={isOrgLoading || (orgDataFetchedRegNo !== "" && orgDataFetchedRegNo === field.value)}
+                                                        className="bg-green-600 hover:bg-green-700">
+                                                        {isOrgLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                                                        Мэдээлэл татах
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </div>
 
                         {/* General Section */}
                         <div className="grid md:grid-cols-3 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="CustomerName">Байгууллагын нэр <span className="text-destructive">*</span></Label>
-                                <Input id="CustomerName" {...form.register("CustomerName")} disabled={true} className="bg-muted" />
+                                <Input
+                                    id="CustomerName"
+                                    {...form.register("CustomerName")}
+                                    disabled={true} className="bg-muted"
+                                    aria-invalid={!!form.formState.errors.CustomerName}
+                                />
+                                {form.formState.errors.CustomerName && (
+                                    <p className="text-sm text-destructive">{form.formState.errors.CustomerName.message}</p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="TinCode">Тин дугаар <span className="text-destructive">*</span></Label>
@@ -328,83 +386,169 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
                                     {...form.register("TinCode")}
                                     disabled={true}
                                     className="bg-muted"
+                                    aria-invalid={!!form.formState.errors.TinCode}
                                 />
+                                {form.formState.errors.TinCode && (
+                                    <p className="text-sm text-destructive">{form.formState.errors.TinCode.message}</p>
+                                )}
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="organizationAddress">Бизнес ангилал <span className="text-destructive">*</span></Label>
-                                <Select
-                                    value={form.watch("BusinessClassOid")}
-                                    onValueChange={(value) => {
-                                        if (value === "new") {
-                                            setShowNewRoleDialog(true)
-                                        } else {
-                                            form.setValue("BusinessClassOid", value)
-                                        }
-                                    }}
-                                >
-                                    <SelectTrigger id="BusinessClassOid" className="w-full">
-                                        <SelectValue placeholder="Сонгох" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {businessClasses.map((item) => (
-                                            <SelectItem key={item.BusinessClassOid} value={item.BusinessClassOid}>
-                                                {item.BusinessClassName}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                            <FormField
+                                control={form.control}
+                                name="BusinessClassOid"
+                                render={({ field, fieldState: { error } }) => (
+                                    <FormItem className="gap-2 items-start">
+                                        <FormLabel className="text-sm leading-none">Бизнес ангилал <span className="text-destructive">*</span></FormLabel>
+                                        <FormControl>
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={(value) => {
+                                                    if (value === "new") {
+                                                        setShowNewRoleDialog(true)
+                                                    } else {
+                                                        field.onChange(value)
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger id="BusinessClassOid" className="w-full" aria-invalid={!!error}>
+                                                    <SelectValue placeholder="Сонгох" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {businessClasses.map((item) => (
+                                                        <SelectItem key={item.BusinessClassOid} value={item.BusinessClassOid}>
+                                                            {item.BusinessClassName}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        {/* Settings Section */}
+                        <div className="space-y-4">
+                            {/* <h3 className="font-medium">Тохиргоо</h3> */}
+                            <div className="flex items-center gap-8">
+                                <FormField
+                                    control={form.control}
+                                    name="IsVatPayer"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                                            <FormControl>
+                                                <Checkbox
+                                                    disabled
+                                                    checked={!!field.value}
+                                                    onCheckedChange={(checked) => field.onChange(!!checked)}
+                                                    className="disabled:opacity-100"
+                                                />
+                                            </FormControl>
+                                            <FormLabel className="font-normal peer-disabled:opacity-100">НӨАТ төлөгч</FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="IsCityPayer"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                                            <FormControl>
+                                                <Checkbox
+                                                    disabled
+                                                    checked={!!field.value}
+                                                    onCheckedChange={(checked) => field.onChange(!!checked)}
+                                                    className="disabled:opacity-100"
+                                                />
+                                            </FormControl>
+                                            <FormLabel className="font-normal peer-disabled:opacity-100">ХХАТ төлөгч</FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="Active"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                                            <FormControl>
+                                                <Checkbox
+                                                    disabled
+                                                    checked={!!field.value}
+                                                    onCheckedChange={(checked) => field.onChange(!!checked)}
+                                                    className="disabled:opacity-100"
+                                                />
+                                            </FormControl>
+                                            <FormLabel className="font-normal peer-disabled:opacity-100">Идэвхтэй</FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
                         </div>
 
                         {/* Director Section */}
                         <div className="space-y-4">
                             <h3 className="font-medium">Захиралын мэдээлэл</h3>
-                            <div className="grid md:grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="DirectorRegister">
-                                        Регистрийн дугаар <span className="text-destructive">*</span>
-                                    </Label>
-                                    <Input id="DirectorRegister" {...form.register("DirectorRegister")} placeholder="АБ12345678" />
-                                    {form.formState.errors.DirectorRegister && (
-                                        <p className="text-sm text-destructive">{form.formState.errors.DirectorRegister.message}</p>
-                                    )}
-                                </div>
-                                <div className="flex items-end">
-                                    <Button
-                                        type="button"
-                                        onClick={fetchDirectorData}
-                                        disabled={isDirectorLoading}
-                                        className="w-full md:w-auto bg-green-600 hover:bg-green-700"
-                                    >
-                                        {isDirectorLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                                        Захирлын мэдээлэл татах
-                                    </Button>
-                                </div>
-                            </div>
+
+                            <FormField
+                                control={form.control}
+                                name="DirectorRegister"
+                                render={({ field, fieldState: { error } }) => (
+                                    <FormItem className="gap-2 items-start">
+                                        <FormLabel className="text-sm leading-none">Регистрийн дугаар <span className="text-destructive">*</span></FormLabel>
+                                        <FormControl>
+                                            <div className="flex gap-2">
+                                                <Input {...field} placeholder="АБ12345678" aria-invalid={!!error} />
+                                                <div className="flex items-center">
+                                                    <Button
+                                                        type="button"
+                                                        onClick={() => fetchDirectorData(field.value)}
+                                                        disabled={isDirectorLoading}
+                                                        className="w-full md:w-auto bg-green-600 hover:bg-green-700"
+                                                    >
+                                                        {isDirectorLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                                                        Мэдээлэл татах
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
                             <div className="grid md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="DrLastname">Овог</Label>
+                                    <Label htmlFor="DrLastname">Овог <span className="text-destructive">*</span></Label>
                                     <div className="flex items-center gap-2">
                                         <Input
                                             id="DrLastname"
                                             {...form.register("DrLastname")}
                                             disabled={true}
                                             className="bg-muted"
+                                            aria-invalid={!!form.formState.errors.DrLastname}
                                         />
                                     </div>
+                                    {form.formState.errors.DrLastname && (
+                                        <p className="text-sm text-destructive">{form.formState.errors.DrLastname.message}</p>
+                                    )}
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="DrFirstname">Нэр</Label>
+                                    <Label htmlFor="DrFirstname">Нэр <span className="text-destructive">*</span></Label>
                                     <div className="flex items-center gap-2">
                                         <Input
                                             id="DrFirstname"
                                             {...form.register("DrFirstname")}
                                             disabled={true}
                                             className="bg-muted"
+                                            aria-invalid={!!form.formState.errors.DrFirstname}
                                         />
                                     </div>
+                                    {form.formState.errors.DrFirstname && (
+                                        <p className="text-sm text-destructive">{form.formState.errors.DrFirstname.message}</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -413,46 +557,67 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
                         <div className="space-y-4">
                             <h3 className="font-medium">Байгууллагын хаягийн мэдээлэл</h3>
                             <div className="grid md:grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="organizationAddress">Аймаг/Хот<span className="text-destructive">*</span></Label>
-                                    <Select
-                                        value={form.watch("RegionId")}
-                                        onValueChange={handleChangeRegion}
-                                    >
-                                        <SelectTrigger id="RegionId" className="w-full">
-                                            <SelectValue placeholder="Сонгох" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {regions.map((item) => (
-                                                <SelectItem key={item.Oid} value={item.Oid}>
-                                                    {item.RegionName}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <FormField
+                                    control={form.control}
+                                    name="RegionId"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Аймаг/Хот<span className="text-destructive">*</span></FormLabel>
+                                            <FormControl>
+                                                <Select
+                                                    value={field.value}
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value)
+                                                        handleChangeRegion(value)
+                                                    }}
+                                                >
+                                                    <SelectTrigger id="RegionId" className="w-full" aria-invalid={!!form.formState.errors.RegionId}>
+                                                        <SelectValue placeholder="Сонгох" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {regions.map((item) => (
+                                                            <SelectItem key={item.Oid} value={item.Oid}>
+                                                                {item.RegionName}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="organizationAddress">Сум/Дүүрэг</Label>
-                                    <Select
-                                        value={form.watch("RegionSubId")}
-                                        onValueChange={(value) => {
-                                            form.setValue("RegionSubId", value)
-                                        }}
-                                        disabled={subRegions.length === 0}
-                                    >
-                                        <SelectTrigger id="RegionSubId" className="w-full">
-                                            <SelectValue placeholder="Сонгох" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {subRegions.map((item) => (
-                                                <SelectItem key={item.Oid} value={item.Oid}>
-                                                    {item.SubRegionName}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <FormField
+                                    control={form.control}
+                                    name="RegionSubId"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Сум/Дүүрэг</FormLabel>
+                                            <FormControl>
+                                                <Select
+                                                    value={field.value}
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value)
+                                                    }}
+                                                    disabled={subRegions.length === 0}
+                                                >
+                                                    <SelectTrigger id="RegionSubId" className="w-full">
+                                                        <SelectValue placeholder="Сонгох" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {subRegions.map((item) => (
+                                                            <SelectItem key={item.Oid} value={item.Oid}>
+                                                                {item.SubRegionName}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                 <div className="space-y-2">
                                     <Label htmlFor="Address">Хаяг</Label>
                                     <Input
@@ -469,10 +634,27 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
                             <h3 className="font-medium">Холбоо барих мэдээлэл</h3>
                             <div className="grid md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
+                                    <Label htmlFor="UserName">Апп хэрэглэгчийн нэр <span className="text-destructive">*</span></Label>
+                                    <Input
+                                        id="UserName"
+                                        type="UserName"
+                                        {...form.register("UserName")}
+                                        aria-invalid={!!form.formState.errors.UserName}
+                                    />
+                                    {form.formState.errors.UserName && (
+                                        <p className="text-sm text-destructive">{form.formState.errors.UserName.message}</p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
                                     <Label htmlFor="Phone">
                                         Утас <span className="text-destructive">*</span>
                                     </Label>
-                                    <Input id="Phone" {...form.register("Phone")} placeholder="99112233" />
+                                    <Input
+                                        id="Phone"
+                                        {...form.register("Phone")}
+                                        placeholder="99112233"
+                                        aria-invalid={!!form.formState.errors.Phone}
+                                    />
                                     {form.formState.errors.Phone && (
                                         <p className="text-sm text-destructive">{form.formState.errors.Phone.message}</p>
                                     )}
@@ -480,15 +662,13 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
                                 <div className="space-y-2">
                                     <Label htmlFor="Mail">И-мэйл</Label>
                                     <Input id="Mail" type="Mail" {...form.register("Mail")} placeholder="example@mail.com" />
-                                    {form.formState.errors.Mail && (
-                                        <p className="text-sm text-destructive">{form.formState.errors.Mail.message}</p>
-                                    )}
                                 </div>
+
                             </div>
                         </div>
 
                         {/* Other Section */}
-                        <div className="space-y-4">
+                        {/* <div className="space-y-4">
                             <h3 className="font-medium">Бусад мэдээлэл</h3>
                             <div className="grid md:grid-cols-3 gap-4">
                                 <div className="space-y-2">
@@ -529,48 +709,7 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
                                     )}
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Settings Section */}
-                        <div className="space-y-4">
-                            <h3 className="font-medium">Тохиргоо</h3>
-                            <div className="flex items-center gap-8">
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="IsVatPayer"
-                                        disabled={true}
-                                        checked={form.watch("IsVatPayer")}
-                                        onCheckedChange={(checked) => form.setValue("IsVatPayer", checked as boolean)}
-                                    />
-                                    <Label htmlFor="IsVatPayer" className="font-normal cursor-pointer">
-                                        НӨАТ төлөгч
-                                    </Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="IsCityPayer"
-                                        disabled={true}
-                                        checked={form.watch("IsCityPayer")}
-                                        onCheckedChange={(checked) => form.setValue("IsCityPayer", checked as boolean)}
-                                    />
-                                    <Label htmlFor="IsCityPayer" className="font-normal cursor-pointer">
-                                        ХХАТ төлөгч
-                                    </Label>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id="Active"
-                                        disabled={true}
-                                        checked={form.watch("Active")}
-                                        onCheckedChange={(checked) => form.setValue("Active", checked as boolean)}
-                                    />
-                                    <Label htmlFor="Active" className="font-normal cursor-pointer">
-                                        Идэвхтэй
-                                    </Label>
-                                </div>
-                            </div>
-                        </div>
-
+                        </div> */}
 
                         {/* Contract Section */}
                         <div className="space-y-4">
@@ -580,64 +719,84 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
                                     <Label htmlFor="ContractAmount">
                                         Гэрээний дүн <span className="text-destructive">*</span>
                                     </Label>
-                                    <Input id="ContractAmount" type="number" {...form.register("ContractAmount", { valueAsNumber: true })} placeholder="199999" />
+                                    <Input
+                                        id="ContractAmount"
+                                        type="number"
+                                        {...form.register("ContractAmount", { valueAsNumber: true })}
+                                        placeholder="199999"
+                                        aria-invalid={!!form.formState.errors.ContractAmount}
+                                    />
                                     {form.formState.errors.ContractAmount && (
                                         <p className="text-sm text-destructive">{form.formState.errors.ContractAmount.message}</p>
                                     )}
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="organizationAddress">Төлбөр төлөх давтамж</Label>
-                                    <Select
-                                        value={form.watch("ContractPeriodType")}
-                                        onValueChange={(value) => {
-                                            if (value === "new") {
-                                                setShowNewRoleDialog(true)
-                                            } else {
-                                                form.setValue("ContractPeriodType", value)
-                                            }
-                                        }}
-                                    >
-                                        <SelectTrigger id="ContractPeriodType" className="w-full">
-                                            <SelectValue placeholder="Сонгох" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {contractPeriodTypes.map((period) => (
-                                                <SelectItem key={period.value} value={period.value}>
-                                                    {period.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="ContractEndDate">Гэрээ дуусах огноо</Label>
-                                    <DatePicker
-                                        value={form.watch("ContractEndDate")}
-                                        onChange={(value) => form.setValue("ContractEndDate", value)}
-                                        className="w-full"
-                                    />
-                                    {form.formState.errors.ContractEndDate && (
-                                        <p className="text-sm text-destructive">{form.formState.errors.ContractEndDate.message}</p>
+                                <FormField
+                                    control={form.control}
+                                    name="ContractPeriodType"
+                                    render={({ field }) => (
+                                        <FormItem className="gap-2">
+                                            <FormLabel>Төлбөр төлөх давтамж</FormLabel>
+
+                                            <Select
+                                                value={field.value ?? ""}
+                                                onValueChange={(value) => {
+                                                    field.onChange(value);
+                                                }}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger id="ContractPeriodType" className="w-full">
+                                                        <SelectValue placeholder="Сонгох" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+
+                                                <SelectContent>
+                                                    {contractPeriodTypes.map((period) => (
+                                                        <SelectItem key={period.value} value={period.value}>
+                                                            {period.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
                                     )}
-                                </div>
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="ContractEndDate"
+                                    render={({ field, fieldState: { error } }) => (
+                                        <FormItem>
+                                            <FormLabel>Гэрээ дуусах огноо <span className="text-destructive">*</span></FormLabel>
+                                            <FormControl>
+                                                <DatePicker
+                                                    value={field.value}
+                                                    onChange={(value) => field.onChange(value)}
+                                                    className="w-full"
+                                                    ariaInvalid={!!error}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="flex justify-end gap-3 mt-6 w-full mx-auto">
-                    <Button type="button" variant="outline" size="lg" onClick={() => router.push("/clients")}>
-                        Цуцлах
-                    </Button>
-                    <Button type="submit" size="lg" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                        Байгууллага үүсгэх
-                    </Button>
-                </div>
-            </form>
+                    <div className="flex justify-end gap-3 mt-6 w-full mx-auto">
+                        <Button type="button" variant="outline" size="lg" onClick={() => router.push("/clients")}>
+                            Цуцлах
+                        </Button>
+                        <Button type="submit" size="lg" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                            Байгууллага үүсгэх
+                        </Button>
+                    </div>
+                </form>
+            </Form >
 
             {/* New Role Dialog */}
-            <Dialog open={showNewRoleDialog} onOpenChange={setShowNewRoleDialog}>
+            < Dialog open={showNewRoleDialog} onOpenChange={setShowNewRoleDialog} >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Шинэ нэвтрэх эрх үүсгэх</DialogTitle>
@@ -669,7 +828,7 @@ export default function CreateCustomerForm({ regions = [], businessClasses = [],
                         <Button onClick={handleSaveNewRole}>Хадгалах</Button>
                     </DialogFooter>
                 </DialogContent>
-            </Dialog>
+            </Dialog >
         </>
     )
 }

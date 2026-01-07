@@ -16,13 +16,15 @@ const DatePicker = ({
     onChange,
     format = "yyyy-MM-dd",
     className,
-    placeholder
+    placeholder,
+    ariaInvalid
 }: {
     value: string | undefined
     onChange: (value: string) => void
     format?: string,
     className?: string,
     placeholder?: string
+    ariaInvalid?: boolean
 }) => {
     const [open, setOpen] = React.useState(false)
 
@@ -32,7 +34,8 @@ const DatePicker = ({
                 <Button
                     variant="outline"
                     id="date"
-                    className={cn("w-48 justify-between font-normal", value ? "" : "text-muted-foreground", className)}
+                    aria-invalid={ariaInvalid}
+                    className={cn("w-48 justify-between font-normal aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50", value ? "" : "text-muted-foreground", className)}
                 >
                     {value ? dateFormat(new Date(value), format) : (placeholder || format)}
                 </Button>

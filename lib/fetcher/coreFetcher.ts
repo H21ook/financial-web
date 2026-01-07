@@ -20,6 +20,7 @@ export async function coreFetcher<T, TBody = undefined>(
 
     const url = new URL(endpoint, base);
 
+    console.log("url ", url)
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -49,6 +50,12 @@ export async function coreFetcher<T, TBody = undefined>(
     }
 
     const json = await res.json();
+
+    if (json?.hasOwnProperty("success")) {
+      if (!json.success) {
+        return { isOk: false, error: json.error };
+      }
+    }
 
     return { isOk: true, data: json };
   } catch (error: unknown) {
