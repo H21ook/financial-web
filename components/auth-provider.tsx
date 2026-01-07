@@ -59,7 +59,6 @@ export function AuthProvider({
             const response = await clientFetcher.get<AuthResponse>("/internal/auth/get-auth-data");
 
             if (response.isOk) {
-                console.log(response.data)
                 setUser(response.data.user);
                 setToken(response.data.token);
                 setStatus("authenticated");

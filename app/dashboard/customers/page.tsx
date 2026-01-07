@@ -29,7 +29,6 @@ export default function CustomersPage() {
         }>(`/internal/accountant/customers`);
         if (res.isOk) {
             setRowData(res.data?.data || []);
-            console.log("res client  ", res.data?.data)
         }
         setLoading(false);
     }, [search, category, dateRange, status]);
