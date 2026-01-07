@@ -20,7 +20,6 @@ export async function coreFetcher<T, TBody = undefined>(
 
     const url = new URL(endpoint, base);
 
-    console.log("url ", url)
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
