@@ -1,4 +1,5 @@
 
+import Breadcrumb from '@/components/custom/Breadcrumb'
 import CreateCustomerForm from '@/components/custom/create-customer-form'
 import { CustomerCreateFormLoader } from '@/components/custom/create-customer-form/loader'
 import { getAllSubRegions, getBusinessClasses, getRegions } from '@/lib/services'
@@ -13,6 +14,9 @@ const CreateCustomerPage = async () => {
     return (
         <div>
             <div className="max-w-7xl mx-auto">
+                <Breadcrumb paths={[
+                    { name: "Харилцагчид" },
+                ]} />
                 <div className="flex justify-between items-center mb-4">
                     <div>
                         <h1 className="text-2xl font-bold mb-1">Шинэ харилцагч нэмэх</h1>

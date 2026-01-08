@@ -144,6 +144,8 @@ const DataTable = forwardRef<AgGridReact, Props>(
                             resizable: true,
                             flex: 1,
                         }}
+                        enableCellTextSelection={true}
+                        ensureDomOrder={true}
                         pinnedBottomRowData={pinnedBottomRowData}
                         // getRowStyle={(params) => {
                         //   if (params.node.rowPinned === 'bottom') {
