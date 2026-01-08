@@ -23,3 +23,13 @@ export interface Taxpayer {
     vatPayer: boolean,
     vatpayerRegisteredDate: string
 }
+
+export type Employee = {
+    id: string
+    firstName: string
+    lastName: string
+    rd: string
+    phone: string
+    accessRight: string
+    status: "active" | "inactive"
+}
