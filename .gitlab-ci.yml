@@ -1,0 +1,65 @@
+stages: [sync]
+
+sync_to_github:
+  stage: sync
+  image: alpine:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  before_script:
+    - apk add --no-cache git curl jq openssl
+    - git config --global user.email "ci@gitlab"
+    - git config --global user.name "gitlab-ci"
+  script:
+    - |
+      set -euo pipefail
+
+      # --- Private key файлаа бэлдэх ---
+      # Хэрвээ GITHUB_PRIVATE_KEY_PEM нь "File variable" бол энэ нь аль хэдийн файлын PATH байна.
+      # Хэрвээ "string variable" бол доорх хэсэг файл үүсгэнэ.
+      if [ -f "${GITHUB_PRIVATE_KEY_PEM:-}" ]; then
+        KEY_FILE="$GITHUB_PRIVATE_KEY_PEM"
+      else
+        KEY_FILE="$(mktemp)"
+        printf "%s" "${GITHUB_PRIVATE_KEY_PEM}" > "$KEY_FILE"
+      fi
+
+      # --- JWT хийх (RS256) ---
+      b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+
+      NOW=$(date +%s)
+      IAT=$((NOW - 60))
+      EXP=$((NOW + 540)) # 9 минут
+
+      HEADER=$(printf '{"alg":"RS256","typ":"JWT"}' | b64url)
+      PAYLOAD=$(printf '{"iat":%d,"exp":%d,"iss":%d}' "$IAT" "$EXP" "$GITHUB_APP_ID" | b64url)
+
+      UNSIGNED="${HEADER}.${PAYLOAD}"
+      SIG=$(printf "%s" "$UNSIGNED" \
+        | openssl dgst -sha256 -sign "$KEY_FILE" \
+        | b64url)
+
+      JWT="${UNSIGNED}.${SIG}"
+
+      # --- Installation access token авах ---
+      TOKEN_JSON=$(curl -sS -X POST \
+        -H "Authorization: Bearer ${JWT}" \
+        -H "Accept: application/vnd.github+json" \
+        "https://api.github.com/app/installations/${GITHUB_INSTALLATION_ID}/access_tokens")
+
+      GH_TOKEN=$(printf "%s" "$TOKEN_JSON" | jq -r '.token')
+
+      if [ -z "$GH_TOKEN" ] || [ "$GH_TOKEN" = "null" ]; then
+        echo "Failed to get GitHub installation token. Response:"
+        echo "$TOKEN_JSON"
+        exit 1
+      fi
+
+      # --- GitHub remote нэмээд push хийх ---
+      git remote remove github 2>/dev/null || true
+      git remote add github "https://x-access-token:${GH_TOKEN}@${GITHUB_REPO}"
+
+      # GitLab main -> GitHub dev_khishigee
+      git push github HEAD:refs/heads/${GITHUB_BRANCH} --force
+
+      # (сонголтоор) Tag-уудыг бас sync хийх бол:
+      # git push github --tags
