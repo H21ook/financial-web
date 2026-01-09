@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRef } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import type { ColDef, ICellRendererParams } from 'ag-grid-community';
 import DataTable from '@/components/custom/shared/data-table';
 import { Button } from '@/components/ui/button';
-import { clientFetcher } from '@/lib/fetcher/clientFetcher';
 import { Customer } from '@/types/customer';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -17,28 +16,14 @@ import { BusinessClass } from '@/types/reference';
 
 export default function CustomersList({
     businessClasses,
+    data
 }: {
     businessClasses: BusinessClass[];
+    data: Customer[];
 }) {
     const gridRef = useRef<AgGridReact>(null);
-    const [rowData, setRowData] = useState<Customer[]>([]);
-    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    const loadData = useCallback(async () => {
-        setLoading(true);
-        const res = await clientFetcher.get<{
-            data: any[]
-        }>(`/internal/accountant/customers`);
-        if (res.isOk) {
-            setRowData(res.data?.data || []);
-        }
-        setLoading(false);
-    }, []);
-
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
 
     // const onExportClick = () => {
     //     if (gridRef.current?.api) {
@@ -121,6 +106,7 @@ export default function CustomersList({
             headerClass: 'ag-center-header',
             cellClass: 'ag-center-cell',
             resizable: false,
+            minWidth: 120,
             maxWidth: 120,
             cellRenderer: (p: ICellRendererParams) => {
                 return (<Badge variant={p.value ? 'default' : 'secondary'} className={cn(p.value ? 'bg-green-500' : "")}>{p.value ? 'Идэвхтэй' : 'Идэвхгүй'}</Badge>)
@@ -180,19 +166,11 @@ export default function CustomersList({
             </div>
 
 
-            <div className="bg-transparent h-[612px]">
+            <div className="bg-transparent h-150">
                 <DataTable
                     ref={gridRef}
-                    rowData={rowData}
-                    // toolbar={<div>
-                    //     <Button
-                    //         onClick={() => router.push("/dashboard/customers/new")}
-                    //     >
-                    //         Нэмэх
-                    //     </Button>
-                    // </div>}
+                    rowData={data}
                     columnDefs={columnDefs}
-                    loading={loading}
                     pagination={false}
                 />
             </div>
