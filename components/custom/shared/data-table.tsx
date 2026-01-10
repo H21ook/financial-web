@@ -1,4 +1,6 @@
-import { forwardRef, useState } from 'react';
+﻿"use client";
+
+import { forwardRef, useState, type ForwardedRef, type RefAttributes, type ReactElement } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import {
     ModuleRegistry,
@@ -25,8 +27,6 @@ import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
     DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from '@/components/ui/button';
@@ -74,20 +74,20 @@ ModuleRegistry.registerModules([
     ColumnApiModule
 ]);
 
-interface Props {
-    rowData: any[];
-    columnDefs: ColDef[];
-    pinnedBottomRowData?: any[];
+interface Props<TData extends Record<string, unknown>> {
+    rowData: TData[];
+    columnDefs: ColDef<TData>[];
+    pinnedBottomRowData?: TData[];
     loading?: boolean;
     pagination?: boolean;
-    onFilteredDataChange?: (data: any[]) => void;
+    onFilteredDataChange?: (data: TData[]) => void;
     toolbar?: React.ReactNode;
 }
 
-const syncColumnsFromGrid = (
-    columnDefs: ColDef[],
+const syncColumnsFromGrid = <TData extends Record<string, unknown>>(
+    columnDefs: ColDef<TData>[],
     columnState: ColumnState[]
-): ColDef[] => {
+): ColDef<TData>[] => {
     return columnDefs.map((col) => {
         const state = columnState.find(
             (s) => s.colId === col.field
@@ -100,88 +100,92 @@ const syncColumnsFromGrid = (
     });
 };
 
-const DataTable = forwardRef<AgGridReact, Props>(
-    ({ rowData, columnDefs, pinnedBottomRowData, toolbar, pagination }, ref) => {
-        const [columns, setColumns] = useState(columnDefs);
+const DataTableInner = <TData extends Record<string, unknown>>(
+    { rowData, columnDefs, pinnedBottomRowData, toolbar, pagination }: Props<TData>,
+    ref: ForwardedRef<AgGridReact<TData>>
+) => {
+    const [columns, setColumns] = useState(columnDefs);
 
-        const onColumnChanged = (params: ColumnMovedEvent | ColumnVisibleEvent | ColumnPinnedEvent) => {
-            const gridState = params.api.getColumnState();
-            setColumns((prev) => syncColumnsFromGrid(prev, gridState));
-        };
+    const onColumnChanged = (params: ColumnMovedEvent | ColumnVisibleEvent | ColumnPinnedEvent) => {
+        const gridState = params.api.getColumnState();
+        setColumns((prev) => syncColumnsFromGrid(prev, gridState));
+    };
 
-        return (
-            <div className="h-full flex flex-col gap-4">
-                <TableToolbar
-                    toolbar={toolbar}
-                    columns={columns}
-                    onToggleColumn={(field) => {
-                        setColumns((prev) =>
-                            prev.map((c) =>
-                                c.field === field ? { ...c, hide: !c.hide } : c
-                            )
-                        );
-                    }}
-                />
-                <div className="flex-1 ag-theme-quartz w-full h-full relative">
-                    {/* {loading && (
-                        <div className="absolute inset-0 bg-white/50 z-20 flex items-center justify-center">
-                            <div className="flex flex-col items-center gap-2">
-                                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                                <span className="text-sm font-medium text-gray-600">
-                                    Ачаалж байна...
-                                </span>
-                            </div>
+    return (
+        <div className="h-full flex flex-col gap-4">
+            <TableToolbar
+                toolbar={toolbar}
+                columns={columns}
+                onToggleColumn={(field) => {
+                    setColumns((prev) =>
+                        prev.map((c) =>
+                            c.field === field ? { ...c, hide: !c.hide } : c
+                        )
+                    );
+                }}
+            />
+            <div className="flex-1 ag-theme-quartz w-full h-full relative">
+                {/* {loading && (
+                    <div className="absolute inset-0 bg-white/50 z-20 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                            <span className="text-sm font-medium text-gray-600">
+                                D?¥ØDøDøD¯D1 DñDøD1D«Dø...
+                            </span>
                         </div>
-                    )} */}
-                    <AgGridReact
-                        ref={ref}
-                        theme={agGridTheme}
-                        rowData={rowData}
-                        columnDefs={columns}
-                        defaultColDef={{
-                            sortable: true,
-                            filter: false,
-                            resizable: true,
-                            flex: 1,
-                        }}
-                        enableCellTextSelection={true}
-                        ensureDomOrder={true}
-                        pinnedBottomRowData={pinnedBottomRowData}
-                        // getRowStyle={(params) => {
-                        //   if (params.node.rowPinned === 'bottom') {
-                        //     return {
-                        //       backgroundColor: '#3b82f680',
-                        //     };
-                        //   }
-                        // }}
-                        pagination={pagination}
-                        paginationPageSize={20}
-                        paginationPageSizeSelector={[10, 20, 50, 100]}
-                        suppressCellFocus={true}
-                        animateRows={true}
-                        onColumnVisible={onColumnChanged}
-                    />
-                </div>
+                    </div>
+                )} */}
+                <AgGridReact
+                    ref={ref}
+                    theme={agGridTheme}
+                    rowData={rowData}
+                    columnDefs={columns}
+                    defaultColDef={{
+                        sortable: true,
+                        filter: false,
+                        resizable: true,
+                        flex: 1,
+                    }}
+                    enableCellTextSelection={true}
+                    ensureDomOrder={true}
+                    pinnedBottomRowData={pinnedBottomRowData}
+                    // getRowStyle={(params) => {
+                    //   if (params.node.rowPinned === 'bottom') {
+                    //     return {
+                    //       backgroundColor: '#3b82f680',
+                    //     };
+                    //   }
+                    // }}
+                    pagination={pagination}
+                    paginationPageSize={20}
+                    paginationPageSizeSelector={[10, 20, 50, 100]}
+                    suppressCellFocus={true}
+                    animateRows={true}
+                    onColumnVisible={onColumnChanged}
+                />
             </div>
-        );
-    }
-);
+        </div>
+    );
+};
+const DataTable = forwardRef(DataTableInner) as <TData extends Record<string, unknown>>(
+    props: Props<TData> & RefAttributes<AgGridReact<TData>>
+) => ReactElement;
 
-DataTable.displayName = 'DataTable';
+(DataTable as { displayName?: string }).displayName = 'DataTable';
 
 export default DataTable;
 
-interface TableToolbarProps {
-    columns: ColDef[];
+interface TableToolbarProps<TData extends Record<string, unknown>> {
+    columns: ColDef<TData>[];
     onToggleColumn: (field: string) => void;
     toolbar?: React.ReactNode;
 }
 
-export const TableToolbar = ({
+export const TableToolbar = <TData extends Record<string, unknown>>({
     toolbar,
     columns,
     onToggleColumn,
-}: TableToolbarProps) => {
+}: TableToolbarProps<TData>) => {
     return (
         <div className="flex justify-between items-center gap-6 pt-2">
             <InputGroup className='h-8 max-w-xs'>
@@ -211,7 +215,7 @@ export const TableToolbar = ({
                                         className="capitalize"
 
                                         checked={!col.hide}
-                                        onCheckedChange={(value) =>
+                                        onCheckedChange={() =>
                                             onToggleColumn(col.field!)
                                         }
                                     >
@@ -226,3 +230,5 @@ export const TableToolbar = ({
         </div>
     );
 };
+
+

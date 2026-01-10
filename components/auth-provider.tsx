@@ -70,7 +70,7 @@ export function AuthProvider({
         }
     }, [clearState]);
 
-    const login = async (payload: LoginFormValues): Promise<CustomResponse<AuthResponse>> => {
+    const login = useCallback(async (payload: LoginFormValues): Promise<CustomResponse<AuthResponse>> => {
         setStatus("loading");
         try {
             const fingerprint = generateDeviceFingerprint();
@@ -87,14 +87,14 @@ export function AuthProvider({
                 setStatus("unauthenticated");
             }
             return response;
-        } catch (e) {
+        } catch {
             setStatus("unauthenticated");
             return {
                 isOk: false,
                 error: "Нэвтрэх үйлдэл амжилтгүй боллоо.",
             };
         }
-    }
+    }, []);
 
     const logout = useCallback(
         async () => {

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -54,32 +54,47 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.488 0.243 264.376);
+
+  --primary: oklch(0.62 0.205 250.5);
   --primary-foreground: oklch(0.97 0.014 254.604);
+
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
+
+  --accent: oklch(0.97 0.02 250.5);
   --accent-foreground: oklch(0.205 0 0);
+
   --destructive: oklch(0.58 0.22 27);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
+
+  --ring: oklch(0.62 0.205 250.5);
+
+  --chart-1: oklch(0.84 0.07 250.5);
+  --chart-2: oklch(0.74 0.11 250.5);
+  --chart-3: oklch(0.67 0.15 250.5);
+  --chart-4: oklch(0.62 0.205 250.5);
+  --chart-5: oklch(0.54 0.20 250.5);
+
   --radius: 0.45rem;
+
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.546 0.245 262.881);
+
+  --sidebar-primary: oklch(0.67 0.15 250.5);
   --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: oklch(0.62 0.205 250.5);
+
+  --grid-line: rgba(0, 0, 0, 0.16);
+  --grid-opacity: 0.5;
+  --noise-color: rgba(0, 0, 0, 0.4);
+  --noise-opacity: 0.4;
 }
 
 .dark {
@@ -89,31 +104,43 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.42 0.18 266);
+
+  --primary: oklch(0.70 0.18 250.5);
   --primary-foreground: oklch(0.97 0.014 254.604);
+
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0 0);
+
+  --accent: oklch(0.32 0.035 250.5);
   --accent-foreground: oklch(0.985 0 0);
+
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
+
+  --ring: oklch(0.70 0.18 250.5);
+
+  --chart-1: oklch(0.84 0.07 250.5);
+  --chart-2: oklch(0.74 0.11 250.5);
+  --chart-3: oklch(0.67 0.15 250.5);
+  --chart-4: oklch(0.62 0.205 250.5);
+  --chart-5: oklch(0.54 0.20 250.5);
+
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --sidebar-primary: oklch(0.67 0.15 250.5);
   --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.70 0.18 250.5);
+
+  --grid-line: rgba(255, 255, 255, 0.12);
+  --grid-opacity: 0.35;
+  --noise-color: rgba(255, 255, 255, 0.12);
+  --noise-opacity: 0.5;
 }
 
 @layer base {
@@ -122,6 +149,10 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   .ag-center-header .ag-header-cell-label {
@@ -135,4 +166,119 @@
   .ag-center-cell {
     @apply flex items-center justify-center text-center;
   }
+
+  .bg-noise {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      var(--noise-color) 1px,
+      transparent 0
+    );
+    background-size: 80px 80px;
+    opacity: var(--noise-opacity);
+  }
+
+  .bg-aurora {
+    background-image:
+      radial-gradient(circle at 20% 20%, oklch(var(--primary) / 0.28), transparent 55%),
+      radial-gradient(circle at 80% 10%, oklch(var(--primary) / 0.22), transparent 50%),
+      radial-gradient(circle at 85% 70%, oklch(var(--primary) / 0.18), transparent 55%),
+      linear-gradient(135deg, transparent 0%, oklch(var(--primary) / 0.16) 40%, transparent 75%);
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+    background-size: 160px 160px;
+    mask-image: radial-gradient(circle at 50% 20%, black, transparent 70%);
+    opacity: var(--grid-opacity);
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-glow-breathe {
+    animation: glow-breathe 14s ease-in-out infinite;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .shine-hover {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shine-hover::after {
+    content: "";
+    position: absolute;
+    inset: -40% 0 auto -120%;
+    height: 180%;
+    background: linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.08) 35%,
+      transparent 70%
+    );
+    transform: translateX(0);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+  }
+
+  .shine-hover:hover::after {
+    transform: translateX(220%);
+  }
 }
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-fade-up,
+  .animate-glow-breathe {
+    animation: none !important;
+  }
+
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .shine-hover::after {
+    transition: none !important;
+  }
+}
+

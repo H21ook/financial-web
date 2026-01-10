@@ -5,7 +5,7 @@ import { Roles } from "@/types/auth.types";
 export async function POST(req: Request) {
   const { userId, password, role } = await req.json();
 
-  let loginEndpoint = Roles.SYSTEM_ADMIN === role ? '/auth/sysadmin' : '/auth/accountant';
+  const loginEndpoint = Roles.SYSTEM_ADMIN === role ? '/auth/sysadmin' : '/auth/accountant';
 
   const deviceId = req.headers.get("x-device-id");
 

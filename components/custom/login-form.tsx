@@ -29,6 +29,7 @@ import { LoginFormValues, Roles } from "@/types/auth.types";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "../ui/input-group";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../auth-provider";
+import { useRouter } from "next/navigation";
 
 const roleOptions: { value: Roles; label: string }[] = [
     { value: Roles.ACCOUNTANT, label: "Нягтлан бодогч" },
@@ -46,6 +47,7 @@ export function LoginForm({
     const [showPassword, setShowPassword] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const { login } = useAuth();
+    const router = useRouter();
 
     const {
         control,
@@ -70,9 +72,9 @@ export function LoginForm({
             }
 
             if (redirectTo) {
-                window.location.href = redirectTo;
+                router.replace(redirectTo);
             } else {
-                window.location.href = "/dashboard";
+                router.replace("/dashboard");
             }
         } catch (error) {
             console.error("Login failed", error)

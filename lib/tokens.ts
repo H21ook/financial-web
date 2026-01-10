@@ -4,7 +4,7 @@ import { User } from "@/types/auth.types";
 import { ACCESS_TOKEN_KEY, USER_DATA_KEY } from "./config";
 import { cookies } from "next/headers";
 
-export async function setTokens(access: string, userData: any) {
+export async function setTokens(access: string, userData: User) {
     const cookie = await cookies();
 
     const maxAge = 60 * 60 * 24 * 6; // 6 days
