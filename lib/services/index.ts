@@ -3,6 +3,7 @@ import { serverFetcher } from "../fetcher/serverFetcher";
 import type { BusinessClass, Region, SubRegion } from "@/types/reference";
 import { getAccessToken } from "../tokens";
 import { Customer, CustomerDetailType, Employee } from "@/types/customer";
+import { generateQueryString } from "../utils";
 
 export const getRegions = async (): Promise<Region[]> => {
   "use cache";
@@ -75,11 +76,11 @@ export const getCustomerDetails = async (oid: string) => {
   return res.data;
 };
 
-export const getCustomersList = async () => {
+export const getCustomersList = async (accountantOid?: string) => {
   const token = await getAccessToken();
   const res = await serverFetcher.get<{
     data: Customer[];
-  }>("/api/customerslist/accountant/customers", token, {
+  }>("/api/customerslist/accountant/customers" + (accountantOid ? `?accountantOid=${accountantOid}` : ""), token, {
     baseUrl: process.env.NEXT_PUBLIC_API_URL,
   });
 
@@ -89,3 +90,30 @@ export const getCustomersList = async () => {
   }
   return res.data.data;
 };
+
+export const getAccountList = async () => {
+  const token = await getAccessToken();
+  const res = await serverFetcher.get<{ data: any[] }>(`/api/account?isActive=true`, token, {
+    baseUrl: process.env.NEXT_PUBLIC_API_URL,
+  });
+
+  if (!res.isOk) {
+    console.error(res);
+    return [];
+  }
+  return res.data.data;
+}
+
+export const getPeriodAccountBalance = async (year?: string, customerId?: string) => {
+  const token = await getAccessToken();
+  const query = generateQueryString({ year, customerId });
+  const res = await serverFetcher.get<{ data: any[] }>(`/api/account-period-balance${query}`, token, {
+    baseUrl: process.env.NEXT_PUBLIC_API_URL,
+  });
+
+  if (!res.isOk) {
+    console.error(res);
+    return [];
+  }
+  return res.data.data;
+}

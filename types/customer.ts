@@ -1,4 +1,5 @@
 export interface Customer {
+  Oid: string;
   CustomerID: string;
   CustomerName: string;
   TIN?: string;

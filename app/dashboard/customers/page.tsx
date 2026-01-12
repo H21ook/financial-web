@@ -7,19 +7,19 @@ const CustomersPageContent = async () => {
     const businessClasses = await getBusinessClasses()
     const customersList = await getCustomersList()
 
-    return <Suspense fallback={<CustomerListLoader />}>
-        <CustomersList
-            data={customersList}
-            businessClasses={businessClasses}
-        />
-    </Suspense>
+    return <CustomersList
+        data={customersList}
+        businessClasses={businessClasses}
+    />
 }
 
 const CustomersPage = async () => {
     return (
         <div>
             <div className="max-w-7xl mx-auto">
-                <CustomersPageContent />
+                <Suspense fallback={<CustomerListLoader />}>
+                    <CustomersPageContent />
+                </Suspense>
             </div>
         </div>
     )

@@ -85,7 +85,7 @@ const MENU_DATA = [
         items: [
             {
                 title: "Эхний үлдэгдэл",
-                url: "#",
+                url: "/dashboard/finance-and-report",
             },
             {
                 title: "Ерөнхий журам",

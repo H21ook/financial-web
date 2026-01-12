@@ -45,3 +45,13 @@ export const checkOrganizationRegisterFormat = (regno: string) => {
 
   return true
 }
+
+export const generateQueryString = (params: Record<string, string | number | undefined | null>) => {
+  let query = "";
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      query += `&${key}=${value}`;
+    }
+  }
+  return query;
+}
