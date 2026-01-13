@@ -58,12 +58,16 @@ export async function createAccountPeriodBalance(data: CreateAccountPeriodBalanc
                 error: result.error || 'AccountPeriodBalance үүсгэхэд алдаа гарлаа'
             };
         }
-    } catch (error: any) {
+    } catch (error) {
         console.error('Error creating AccountPeriodBalance:', error);
+        let errorMessage = 'Алдаа гарлаа';
+        if (error instanceof Error) {
+            errorMessage = error.message || 'Алдаа гарлаа';
+        }
         return {
             success: false,
             data: undefined,
-            error: error.message || 'Алдаа гарлаа'
+            error: errorMessage
         };
     }
 }
@@ -97,7 +101,7 @@ async function updateAccountPeriodBalanceItem(oid: string, data: AccountPeriodBa
 
 export async function updateAccountPeriodBalanceItems(data: UpdateAccountPeriodBalanceItemsData) {
     try {
-        let finalAccountPeriodBalanceOid = data.AccountPeriodBalanceOid;
+        const finalAccountPeriodBalanceOid = data.AccountPeriodBalanceOid;
 
         // Validation
         if (!finalAccountPeriodBalanceOid) {
@@ -146,11 +150,15 @@ export async function updateAccountPeriodBalanceItems(data: UpdateAccountPeriodB
             success: true,
             message: 'Бүх мэдээлэл амжилттай хадгалагдлаа'
         };
-    } catch (error: any) {
+    } catch (error) {
         console.error('Error updating AccountPeriodBalanceItems:', error);
+        let errorMessage = 'Мэдээлэл хадгалахад алдаа гарлаа';
+        if (error instanceof Error) {
+            errorMessage = error.message || 'Мэдээлэл хадгалахад алдаа гарлаа';
+        }
         return {
             success: false,
-            error: error.message || 'Мэдээлэл хадгалахад алдаа гарлаа'
+            error: errorMessage
         };
     }
 }
@@ -212,11 +220,15 @@ export async function createAccountPeriodBalanceWithItems(data: CreateAccountPer
                 accountPeriodBalanceOid
             }
         };
-    } catch (error: any) {
+    } catch (error) {
+        let errorMessage = 'Мэдээлэл үүсгэхэд алдаа гарлаа';
+        if (error instanceof Error) {
+            errorMessage = error.message || 'Мэдээлэл үүсгэхэд алдаа гарлаа';
+        }
         console.error('Error creating AccountPeriodBalance with items:', error);
         return {
             success: false,
-            error: error.message || 'Мэдээлэл үүсгэхэд алдаа гарлаа'
+            error: errorMessage
         };
     }
 }

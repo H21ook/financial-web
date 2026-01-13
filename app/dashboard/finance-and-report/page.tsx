@@ -12,6 +12,14 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
 const FinanceAndReportPage = () => {
+    return (
+        <React.Suspense fallback={<div>Уншиж байна...</div>}>
+            <FinanceAndReportContent />
+        </React.Suspense>
+    );
+};
+
+const FinanceAndReportContent = () => {
     const { user } = useAuth();
     const router = useRouter();
     const pathname = usePathname();
@@ -106,44 +114,42 @@ const FinanceAndReportPage = () => {
                         </Button>
                     </div>
                 </div>
-                <React.Suspense fallback={<div>Уншиж байна...</div>}>
-                    <AccountsList
-                        customers={customers}
-                        accountsBalanceData={accountPeriodBalance}
-                        filter={{
-                            yearType: yearType,
-                            customerId: customerId
-                        }}
-                        onFilterChange={handleFilterChange}
-                        onEdit={handleEdit}
-                    />
+                <AccountsList
+                    customers={customers}
+                    accountsBalanceData={accountPeriodBalance}
+                    filter={{
+                        yearType: yearType,
+                        customerId: customerId
+                    }}
+                    onFilterChange={handleFilterChange}
+                    onEdit={handleEdit}
+                />
 
-                    {/* Update Modal */}
-                    <UpdateAccountPeriod
-                        open={showUpdateModal}
-                        onClose={() => setShowUpdateModal(false)}
-                        onSuccess={() => {
-                            fetchAccountPeriodBalance(yearType, customerId);
-                            setShowUpdateModal(false);
-                        }}
-                        accounts={accounts}
-                        customers={customers}
-                        selectedCustomer={customers.find(c => c.Oid === selectedBalance?.CustomerOid)}
-                        selectedBalance={selectedBalance || undefined}
-                    />
+                {/* Update Modal */}
+                <UpdateAccountPeriod
+                    open={showUpdateModal}
+                    onClose={() => setShowUpdateModal(false)}
+                    onSuccess={() => {
+                        fetchAccountPeriodBalance(yearType, customerId);
+                        setShowUpdateModal(false);
+                    }}
+                    accounts={accounts}
+                    customers={customers}
+                    selectedCustomer={customers.find(c => c.Oid === selectedBalance?.CustomerOid)}
+                    selectedBalance={selectedBalance || undefined}
+                />
 
-                    {/* Create Modal */}
-                    <CreateAccountPeriod
-                        open={showCreateModal}
-                        onClose={() => setShowCreateModal(false)}
-                        onSuccess={() => {
-                            fetchAccountPeriodBalance(yearType, customerId);
-                            setShowCreateModal(false);
-                        }}
-                        accounts={accounts}
-                        customers={customers}
-                    />
-                </React.Suspense>
+                {/* Create Modal */}
+                <CreateAccountPeriod
+                    open={showCreateModal}
+                    onClose={() => setShowCreateModal(false)}
+                    onSuccess={() => {
+                        fetchAccountPeriodBalance(yearType, customerId);
+                        setShowCreateModal(false);
+                    }}
+                    accounts={accounts}
+                    customers={customers}
+                />
             </div>
         </div>
     );

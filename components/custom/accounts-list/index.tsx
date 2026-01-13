@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRef, useSyncExternalStore } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import type { ColDef, ICellRendererParams } from 'ag-grid-community';
 import DataTable from '@/components/custom/shared/data-table';
@@ -32,10 +32,11 @@ export default function AccountsList({
     const selectedYear = filter?.yearType;
     const selectedCustomer = filter?.customerId;
 
-    const [currentYear, setCurrentYear] = useState<number>(2026);
-    useEffect(() => {
-        setCurrentYear(new Date().getFullYear());
-    }, []);
+    const currentYear = useSyncExternalStore(
+        () => () => { },
+        () => new Date().getFullYear(),
+        () => 2026
+    );
 
     const columnDefs: ColDef[] = [
         {

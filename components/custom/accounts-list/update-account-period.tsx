@@ -25,7 +25,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Account, AccountBalance, accountPeriodBalanceItemSchema } from "@/types/account";
+import { Account, AccountBalance, AccountPeriodBalanceItem, accountPeriodBalanceItemSchema } from "@/types/account";
 import { Customer } from "@/types/customer";
 import { Loader2, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -96,19 +96,23 @@ export default function UpdateAccountPeriod({
         if (selectedBalance?.Oid) {
             setLoading(true);
             try {
-                const res = await clientFetcher.get<any[]>(`/internal/v1/account-period-balance-item?accountPeriodBalanceOid=${selectedBalance?.Oid}`);
+                const res = await clientFetcher.get<AccountPeriodBalanceItem[]>(`/internal/v1/account-period-balance-item?accountPeriodBalanceOid=${selectedBalance?.Oid}`);
                 if (res.isOk) {
                     reset({
                         items: res.data
                     })
                 }
-            } catch (e: any) {
-                toast.error(e.message || 'Алдаа гарлаа');
+            } catch (e) {
+                let errorMessage = 'Алдаа гарлаа';
+                if (e instanceof Error) {
+                    errorMessage = e.message || 'Алдаа гарлаа';
+                }
+                toast.error(errorMessage);
             } finally {
                 setLoading(false);
             }
         }
-    }, [selectedBalance])
+    }, [selectedBalance, reset])
 
     useEffect(() => {
         fetchAccountsData();
@@ -144,8 +148,12 @@ export default function UpdateAccountPeriod({
             } else {
                 toast.error(result.error || 'Алдаа гарлаа');
             }
-        } catch (err: any) {
-            toast.error(err.message || 'Алдаа гарлаа');
+        } catch (err) {
+            let errorMessage = 'Алдаа гарлаа';
+            if (err instanceof Error) {
+                errorMessage = err.message || 'Алдаа гарлаа';
+            }
+            toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
         }

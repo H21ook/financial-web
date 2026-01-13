@@ -31,7 +31,7 @@ import { Account, accountPeriodBalanceItemSchema } from "@/types/account";
 import { Customer } from "@/types/customer";
 import { Loader2, Plus } from "lucide-react";
 import { createAccountPeriodBalanceWithItems } from "@/lib/actions/account-period-balance";
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
 // Schema for the entire form
@@ -58,12 +58,12 @@ export default function CreateAccountPeriod({
     accounts,
     customers,
 }: CreateAccountPeriodProps) {
-    const [currentYear, setCurrentYear] = useState<number>(2026);
+    const currentYear = useSyncExternalStore(
+        () => () => { },
+        () => new Date().getFullYear(),
+        () => 2026
+    );
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    useEffect(() => {
-        setCurrentYear(new Date().getFullYear());
-    }, []);
 
     const form = useForm<CreateAccountPeriodFormValues>({
         resolver: zodResolver(createAccountPeriodSchema),
@@ -133,8 +133,12 @@ export default function CreateAccountPeriod({
             } else {
                 toast.error(result.error || 'Алдаа гарлаа');
             }
-        } catch (err: any) {
-            toast.error(err.message || 'Алдаа гарлаа');
+        } catch (err) {
+            let errorMessage = 'Алдаа гарлаа';
+            if (err instanceof Error) {
+                errorMessage = err.message || 'Алдаа гарлаа';
+            }
+            toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);
         }
