@@ -47,11 +47,11 @@ export const checkOrganizationRegisterFormat = (regno: string) => {
 }
 
 export const generateQueryString = (params: Record<string, string | number | undefined | null>) => {
-  let query = "";
+  const queryFields = []
   for (const [key, value] of Object.entries(params)) {
     if (value) {
-      query += `&${key}=${value}`;
+      queryFields.push(`${key}=${value}`);
     }
   }
-  return query;
+  return queryFields.join("&");
 }

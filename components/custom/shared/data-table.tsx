@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { forwardRef, useState, type ForwardedRef, type RefAttributes, type ReactElement } from 'react';
+import { forwardRef, useState, type ForwardedRef, type RefAttributes, type ReactElement, useRef, useDeferredValue } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import {
     ModuleRegistry,
@@ -14,6 +14,7 @@ import {
     PinnedRowModule,
     RowStyleModule,
     ColumnApiModule,
+    QuickFilterModule,
     themeQuartz,
 } from 'ag-grid-community';
 import type {
@@ -71,7 +72,8 @@ ModuleRegistry.registerModules([
     NumberFilterModule,
     ValidationModule,
     RowStyleModule,
-    ColumnApiModule
+    ColumnApiModule,
+    QuickFilterModule
 ]);
 
 interface Props<TData extends Record<string, unknown>> {
@@ -105,17 +107,25 @@ const DataTableInner = <TData extends Record<string, unknown>>(
     ref: ForwardedRef<AgGridReact<TData>>
 ) => {
     const [columns, setColumns] = useState(columnDefs);
+    const [searchText, setSearchText] = useState('');
+    const deferredSearchText = useDeferredValue(searchText);
 
     const onColumnChanged = (params: ColumnMovedEvent | ColumnVisibleEvent | ColumnPinnedEvent) => {
         const gridState = params.api.getColumnState();
         setColumns((prev) => syncColumnsFromGrid(prev, gridState));
     };
 
+
+
     return (
         <div className="h-full flex flex-col gap-4">
             <TableToolbar
                 toolbar={toolbar}
                 columns={columns}
+                searchValue={searchText}
+                onSearch={(value) => {
+                    setSearchText(value)
+                }}
                 onToggleColumn={(field) => {
                     setColumns((prev) =>
                         prev.map((c) =>
@@ -146,6 +156,7 @@ const DataTableInner = <TData extends Record<string, unknown>>(
                         resizable: true,
                         flex: 1,
                     }}
+                    quickFilterText={deferredSearchText}
                     enableCellTextSelection={true}
                     ensureDomOrder={true}
                     pinnedBottomRowData={pinnedBottomRowData}
@@ -179,17 +190,25 @@ interface TableToolbarProps<TData extends Record<string, unknown>> {
     columns: ColDef<TData>[];
     onToggleColumn: (field: string) => void;
     toolbar?: React.ReactNode;
+    onSearch?: (value: string) => void;
+    searchValue?: string;
 }
 
 export const TableToolbar = <TData extends Record<string, unknown>>({
     toolbar,
     columns,
     onToggleColumn,
+    searchValue,
+    onSearch
 }: TableToolbarProps<TData>) => {
+
     return (
         <div className="flex justify-between items-center gap-6 pt-2">
             <InputGroup className='h-8 max-w-xs'>
-                <InputGroupInput placeholder="Хайх..." />
+                <InputGroupInput placeholder="Хайх..." value={searchValue} onChange={(e) => {
+                    const value = e.target.value;
+                    onSearch?.(value)
+                }} />
                 <InputGroupAddon>
                     <Search />
                 </InputGroupAddon>
@@ -208,10 +227,10 @@ export const TableToolbar = <TData extends Record<string, unknown>>({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                         {columns
-                            .map((col) => {
+                            .map((col, index) => {
                                 return (
                                     <DropdownMenuCheckboxItem
-                                        key={col.field}
+                                        key={`${index}-${col?.field}`}
                                         className="capitalize"
 
                                         checked={!col.hide}

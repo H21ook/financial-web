@@ -104,10 +104,23 @@ export const getAccountList = async () => {
   return res.data.data;
 }
 
-export const getPeriodAccountBalance = async (year?: string, customerId?: string) => {
+export const getPeriodAccountBalance = async (yearType?: string, customerId?: string) => {
   const token = await getAccessToken();
-  const query = generateQueryString({ year, customerId });
-  const res = await serverFetcher.get<{ data: any[] }>(`/api/account-period-balance${query}`, token, {
+  const query = generateQueryString({ yearType, customerId });
+  const res = await serverFetcher.get<{ data: any[] }>(`/api/account-period-balance${query ? `?${query}` : ""}`, token, {
+    baseUrl: process.env.NEXT_PUBLIC_API_URL,
+  });
+
+  if (!res.isOk) {
+    console.error(res);
+    return [];
+  }
+  return res.data.data;
+}
+
+export const getPeriodAccountBalanceItem = async (accountPeriodBalanceOid: string) => {
+  const token = await getAccessToken();
+  const res = await serverFetcher.get<{ data: any[] }>(`/api/account-period-balance-item?accountPeriodBalanceOid=${accountPeriodBalanceOid}`, token, {
     baseUrl: process.env.NEXT_PUBLIC_API_URL,
   });
 

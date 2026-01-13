@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import type { ColDef, ICellRendererParams } from 'ag-grid-community';
 import DataTable from '@/components/custom/shared/data-table';
@@ -12,13 +12,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function AccountsList({
     customers = [],
     accountsBalanceData = [],
-    onEdit
+    onEdit,
+    filter,
+    onFilterChange
 }: {
     customers: Customer[];
     accountsBalanceData: AccountBalance[];
     onEdit?: (balance: AccountBalance) => void;
+    filter?: {
+        yearType?: number,
+        customerId?: string
+    };
+    onFilterChange?: (filterData: {
+        yearType?: number,
+        customerId?: string
+    }) => void
 }) {
     const gridRef = useRef<AgGridReact>(null);
+    const selectedYear = filter?.yearType;
+    const selectedCustomer = filter?.customerId;
+
+    const [currentYear, setCurrentYear] = useState<number>(2026);
+    useEffect(() => {
+        setCurrentYear(new Date().getFullYear());
+    }, []);
 
     const columnDefs: ColDef[] = [
         {
@@ -37,6 +54,7 @@ export default function AccountsList({
             editable: false,
             sortable: false,
             maxWidth: 50,
+            getQuickFilterText: () => "",
         },
         {
             field: 'CustomerPin',
@@ -73,7 +91,8 @@ export default function AccountsList({
             maxWidth: 120,
             cellRenderer: (p: ICellRendererParams) => {
                 return p.value || '-';
-            }
+            },
+            getQuickFilterText: () => "",
         },
         {
             field: 'ActiveAmount',
@@ -93,7 +112,8 @@ export default function AccountsList({
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                 });
-            }
+            },
+            getQuickFilterText: () => "",
         },
         {
             field: 'PassiveAmount',
@@ -113,7 +133,8 @@ export default function AccountsList({
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                 });
-            }
+            },
+            getQuickFilterText: () => "",
         },
         {
             colId: "actions",
@@ -145,58 +166,53 @@ export default function AccountsList({
             resizable: false,
             suppressMovable: true,
             editable: false,
+            getQuickFilterText: () => "",
         },
     ];
 
     return (
-        <>
-            <div className="flex justify-between items-center mb-4">
-                <div>
-                    <h1 className="text-2xl font-bold mb-1">Эхний үлдэгдэл</h1>
-                    <p className="text-sm text-gray-500 font-medium">
-                        Харилцагчдын эхний үлдэгдлийн жагсаалт
-                    </p>
-                </div>
-            </div>
-
-            <div className="bg-transparent h-150">
-                <DataTable
-                    ref={gridRef}
-                    toolbar={
-                        <div className="flex justify-end items-center gap-2">
-                            <Select>
-                                <SelectTrigger className='w-32'>
-                                    <SelectValue placeholder="Жил сонгох" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Array.from({ length: 20 }, (_, i) => {
-                                        const year = new Date().getFullYear() - i;
-                                        return (
-                                            <SelectItem key={year} value={year.toString()}>
-                                                {year}
-                                            </SelectItem>
-                                        );
-                                    })}
-                                </SelectContent>
-                            </Select>
-                            <Select>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Харилцагч сонгох" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {customers.map((customer) => (
-                                        <SelectItem key={customer.Oid} value={customer.Oid}>
-                                            {customer.CustomerID} - {customer.CustomerName}
+        <div className="bg-transparent h-150">
+            <DataTable
+                ref={gridRef}
+                toolbar={
+                    <div className="flex justify-end items-center gap-2">
+                        <Select value={selectedYear?.toString()} onValueChange={(e) => {
+                            const y = parseInt(e)
+                            onFilterChange?.({ yearType: y, customerId: selectedCustomer })
+                        }}>
+                            <SelectTrigger className='w-32'>
+                                <SelectValue placeholder="Жил сонгох" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Array.from({ length: 20 }, (_, i) => {
+                                    const year = currentYear - i;
+                                    return (
+                                        <SelectItem key={year} value={year.toString()}>
+                                            {year}
                                         </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    }
-                    rowData={accountsBalanceData}
-                    columnDefs={columnDefs}
-                />
-            </div>
-        </>
+                                    );
+                                })}
+                            </SelectContent>
+                        </Select>
+                        <Select value={selectedCustomer} onValueChange={(e) => {
+                            onFilterChange?.({ customerId: e, yearType: selectedYear })
+                        }}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Харилцагч сонгох" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {customers.map((customer, index) => (
+                                    <SelectItem key={`${index}-${customer.Oid}`} value={customer.Oid}>
+                                        {customer.CustomerID} - {customer.CustomerName}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                }
+                rowData={accountsBalanceData}
+                columnDefs={columnDefs}
+            />
+        </div>
     );
 }

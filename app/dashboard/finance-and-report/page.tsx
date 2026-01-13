@@ -6,21 +6,37 @@ import React from 'react';
 import AccountsList from '@/components/custom/accounts-list';
 import { Customer } from '@/types/customer';
 import { generateQueryString } from '@/lib/utils';
+import UpdateAccountPeriod from '@/components/custom/accounts-list/update-account-period';
+import CreateAccountPeriod from '@/components/custom/accounts-list/create-account-period';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 const FinanceAndReportPage = () => {
     const { user } = useAuth();
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
     const [accounts, setAccounts] = React.useState<Account[]>([]);
     const [customers, setCustomers] = React.useState<Customer[]>([]);
     const [accountPeriodBalance, setAccountPeriodBalance] = React.useState<AccountBalance[]>([]);
     const [selectedBalance, setSelectedBalance] = React.useState<AccountBalance | null>(null);
-    const [showEditPopup, setShowEditPopup] = React.useState(false);
+    const [showUpdateModal, setShowUpdateModal] = React.useState(false);
+    const [showCreateModal, setShowCreateModal] = React.useState(false);
+
+    const yearType = searchParams.get('year') ? Number(searchParams.get('year')) : new Date().getFullYear();
+    const customerId = searchParams.get('customerId') || undefined;
+
 
     const fetchCustomers = React.useCallback(async () => {
-        const res = await clientFetcher.get<Customer[]>("/internal/v1/customers-list?accountantOid=" + user?.AccountantOid);
+        if (!user?.AccountantOid) {
+            return;
+        }
+        const res = await clientFetcher.get<Customer[]>("/internal/v1/customers-list?accountantOid=" + user.AccountantOid);
         if (res.isOk) {
             setCustomers(res.data);
         }
-    }, []);
+    }, [user]);
 
     const fetchAccounts = React.useCallback(async () => {
         const res = await clientFetcher.get<Account[]>("/internal/v1/account");
@@ -29,8 +45,9 @@ const FinanceAndReportPage = () => {
         }
     }, []);
 
-    const fetchAccountPeriodBalance = React.useCallback(async (selectedYearType?: string, customerId?: string) => {
-        const res = await clientFetcher.get<AccountBalance[]>("/internal/v1/account-period-balance" + generateQueryString({ selectedYearType, customerId }));
+    const fetchAccountPeriodBalance = React.useCallback(async (selectedYearType?: number, customerId?: string) => {
+        const queryString = generateQueryString({ year: selectedYearType, customerId })
+        const res = await clientFetcher.get<AccountBalance[]>(`/internal/v1/account-period-balance${queryString ? `?${queryString}` : ""}`);
         if (res.isOk) {
             setAccountPeriodBalance(res.data);
         }
@@ -38,61 +55,95 @@ const FinanceAndReportPage = () => {
 
     React.useEffect(() => {
         fetchCustomers();
+    }, [fetchCustomers]);
+
+    React.useEffect(() => {
         fetchAccounts();
-        fetchAccountPeriodBalance();
     }, [fetchAccounts]);
+
+    React.useEffect(() => {
+        fetchAccountPeriodBalance(yearType, customerId);
+    }, [yearType, customerId, fetchAccountPeriodBalance]);
+
+    const handleFilterChange = (filterData: { yearType?: number, customerId?: string }) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (filterData.yearType) {
+            params.set('year', filterData.yearType.toString());
+        } else {
+            params.delete('year');
+        }
+
+        if (filterData.customerId) {
+            params.set('customerId', filterData.customerId);
+        } else {
+            params.delete('customerId');
+        }
+
+        router.push(`${pathname}?${params.toString()}`);
+    };
 
     const handleEdit = (balance: AccountBalance) => {
         setSelectedBalance(balance);
-        setShowEditPopup(true);
+        setShowUpdateModal(true);
     };
 
     return (
         <div>
             <div className="max-w-7xl mx-auto">
-                <AccountsList
-                    customers={customers}
-                    accountsBalanceData={accountPeriodBalance}
-                    onEdit={handleEdit}
-                />
-
-                {showEditPopup && selectedBalance && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                        <div className="bg-white p-6 rounded-lg max-w-md w-full">
-                            <h2 className="text-xl font-bold mb-4">Данс засах</h2>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Харилцагчийн регистр</label>
-                                    <p className="text-gray-700">{selectedBalance.CustomerPin}</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Харилцагчийн нэр</label>
-                                    <p className="text-gray-700">{selectedBalance.CustomerName}</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Жилийн төрөл</label>
-                                    <p className="text-gray-700">{selectedBalance.YearType}</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Идэвхтэй дүн</label>
-                                    <p className="text-gray-700">{selectedBalance.ActiveAmount.toLocaleString('mn-MN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">Хуулийн дүн</label>
-                                    <p className="text-gray-700">{selectedBalance.PassiveAmount.toLocaleString('mn-MN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-2 mt-6">
-                                <button
-                                    onClick={() => setShowEditPopup(false)}
-                                    className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                                >
-                                    Хаах
-                                </button>
-                            </div>
-                        </div>
+                <div className="flex justify-between items-center mb-4">
+                    <div>
+                        <h1 className="text-2xl font-bold mb-1">Эхний үлдэгдэл</h1>
+                        <p className="text-sm text-gray-500 font-medium">
+                            Харилцагчдын эхний үлдэгдлийн жагсаалт
+                        </p>
                     </div>
-                )}
+                    <div>
+                        <Button
+                            onClick={() => setShowCreateModal(true)}
+                            className="bg-primary text-primary-foreground"
+                        >
+                            Шинэ үлдэгдэл үүсгэх
+                        </Button>
+                    </div>
+                </div>
+                <React.Suspense fallback={<div>Уншиж байна...</div>}>
+                    <AccountsList
+                        customers={customers}
+                        accountsBalanceData={accountPeriodBalance}
+                        filter={{
+                            yearType: yearType,
+                            customerId: customerId
+                        }}
+                        onFilterChange={handleFilterChange}
+                        onEdit={handleEdit}
+                    />
+
+                    {/* Update Modal */}
+                    <UpdateAccountPeriod
+                        open={showUpdateModal}
+                        onClose={() => setShowUpdateModal(false)}
+                        onSuccess={() => {
+                            fetchAccountPeriodBalance(yearType, customerId);
+                            setShowUpdateModal(false);
+                        }}
+                        accounts={accounts}
+                        customers={customers}
+                        selectedCustomer={customers.find(c => c.Oid === selectedBalance?.CustomerOid)}
+                        selectedBalance={selectedBalance || undefined}
+                    />
+
+                    {/* Create Modal */}
+                    <CreateAccountPeriod
+                        open={showCreateModal}
+                        onClose={() => setShowCreateModal(false)}
+                        onSuccess={() => {
+                            fetchAccountPeriodBalance(yearType, customerId);
+                            setShowCreateModal(false);
+                        }}
+                        accounts={accounts}
+                        customers={customers}
+                    />
+                </React.Suspense>
             </div>
         </div>
     );
